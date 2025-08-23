@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tool } from '@/types';
-import { updateToolConditions } from '@/lib/tools';
+import { updateToolConditions } from '@/services/tools';
 
 interface EndEventModalProps {
   open: boolean;
@@ -26,6 +26,7 @@ const TOOL_CONDITIONS = [
 
 export default function EndEventModal({ open, onOpenChange, tools, onConfirm }: EndEventModalProps) {
   const [toolConditions, setToolConditions] = useState<Record<string, { condition: string; notes: string }>>({});
+  const [loading, setLoading] = useState(false);
 
   const handleConditionChange = (toolId: string, condition: string) => {
     setToolConditions(prev => ({
@@ -41,16 +42,25 @@ export default function EndEventModal({ open, onOpenChange, tools, onConfirm }: 
     }));
   };
 
-  const handleSubmit = () => {
-    const updates = tools.map(tool => ({
-      toolId: tool.id,
-      finalCondition: toolConditions[tool.id]?.condition || tool.initialCondition,
-      notes: toolConditions[tool.id]?.notes || undefined,
-    }));
+  const handleSubmit = async () => {
+    if (loading) return;
 
-    updateToolConditions(updates);
-    onConfirm();
-    setToolConditions({});
+    setLoading(true);
+    try {
+      const updates = tools.map(tool => ({
+        toolId: tool.id,
+        finalCondition: toolConditions[tool.id]?.condition || tool.initialCondition,
+        notes: toolConditions[tool.id]?.notes || undefined,
+      }));
+
+      await updateToolConditions(updates);
+      await onConfirm();
+      setToolConditions({});
+    } catch (error) {
+      console.error('Error updating tool conditions:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const allConditionsSet = tools.every(tool => 
@@ -134,15 +144,15 @@ export default function EndEventModal({ open, onOpenChange, tools, onConfirm }: 
             ))}
             
             <div className="flex justify-end space-x-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleSubmit}
-                disabled={!allConditionsSet}
+                disabled={!allConditionsSet || loading}
                 variant="destructive"
               >
-                End Event
+                {loading ? 'Ending Event...' : 'End Event'}
               </Button>
             </div>
           </div>

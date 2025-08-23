@@ -8,10 +8,10 @@ import { Wrench, Trash2 } from 'lucide-react';
 
 interface ToolCardProps {
   tool: Tool;
-  onDelete: (toolId: string) => void;
+  // onDelete: (toolId: string) => void;
 }
 
-export default function ToolCard({ tool, onDelete }: ToolCardProps) {
+export default function ToolCard({ tool }: ToolCardProps) {
   const getConditionColor = (condition: string) => {
     switch (condition.toLowerCase()) {
       case 'good':
@@ -38,7 +38,7 @@ export default function ToolCard({ tool, onDelete }: ToolCardProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onDelete(tool.id)}
+            // onClick={() => onDelete(tool.id)}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 className="w-4 h-4" />

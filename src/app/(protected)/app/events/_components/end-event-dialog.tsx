@@ -87,6 +87,10 @@ export default function EndEventModal({ tools }: EndEventModalProps) {
   };
 
   const handleSubmit = async (values: EndEventFormData) => {
+    if (!endEventModal.eventId) {
+      return;
+    }
+
     if (loading || isUploading) return;
 
     setLoading(true);
@@ -115,20 +119,14 @@ export default function EndEventModal({ tools }: EndEventModalProps) {
         }
       }
 
+      await endEvent(+endEventModal.eventId);
+
       // Reset form and close dialog
       form.reset();
       setSelectedImages({});
       setEndEventModal(false, null);
     } catch (error) {
       console.error("Error ending event:", error);
-      // Show user-friendly error message
-      alert(
-        `Gagal mengakhiri kegiatan: ${
-          error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan yang tidak diketahui"
-        }`
-      );
     } finally {
       setLoading(false);
       setIsUploading(false);

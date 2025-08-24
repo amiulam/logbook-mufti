@@ -7,19 +7,19 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 // Helper function to map database event to Event interface
-function mapDbEventToEvent(dbEvent: any): Event {
-  return {
-    id: dbEvent.id.toString(),
-    publicId: dbEvent.public_id,
-    name: dbEvent.name,
-    assignmentLetter: dbEvent.assignmentLetter || undefined,
-    status: dbEvent.status as Event["status"],
-    startDate: dbEvent.startDate?.toISOString() || undefined,
-    endDate: dbEvent.endDate?.toISOString() || undefined,
-    createdAt: dbEvent.createdAt.toISOString(),
-    updatedAt: dbEvent.updatedAt.toISOString(),
-  };
-}
+// function mapDbEventToEvent(dbEvent: any): Event {
+//   return {
+//     id: dbEvent.id.toString(),
+//     publicId: dbEvent.public_id,
+//     name: dbEvent.name,
+//     assignmentLetter: dbEvent.assignmentLetter || undefined,
+//     status: dbEvent.status as Event["status"],
+//     startDate: dbEvent.startDate?.toISOString() || undefined,
+//     endDate: dbEvent.endDate?.toISOString() || undefined,
+//     createdAt: dbEvent.createdAt.toISOString(),
+//     updatedAt: dbEvent.updatedAt.toISOString(),
+//   };
+// }
 
 export async function getAllEvents() {
   const eventList = await db.query.events.findMany({
@@ -68,13 +68,14 @@ export async function createEvent(eventData: unknown): Promise<Event> {
 
   revalidatePath("/app", "layout");
 
-  return mapDbEventToEvent(dbEvent);
+  return dbEvent;
 }
 
 export async function updateEvent(
   id: number,
   updates: Partial<Event>
 ): Promise<Event | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {
     updatedAt: new Date(),
   };
@@ -98,7 +99,7 @@ export async function updateEvent(
 
   revalidatePath("/app/event", "layout");
 
-  return dbEvent.length > 0 ? mapDbEventToEvent(dbEvent[0]) : null;
+  return dbEvent.length > 0 ? dbEvent[0] : null;
 }
 
 export async function deleteEvent(id: string): Promise<boolean> {
@@ -117,13 +118,17 @@ export async function startEvent(id: number) {
     .returning();
 
   revalidatePath("/app", "layout");
-
-  // return dbEvent ? mapDbEventToEvent(dbEvent) : null;
 }
 
-export async function endEvent(id: number): Promise<Event | null> {
-  return updateEvent(id, {
-    status: "completed",
-    endDate: new Date().toISOString(),
-  });
+export async function endEvent(id: number) {
+  await db
+    .update(events)
+    .set({
+      status: "completed",
+      endDate: new Date().toISOString(),
+    })
+    .where(eq(events.id, id))
+    .returning();
+
+  revalidatePath("/app", "layout");
 }

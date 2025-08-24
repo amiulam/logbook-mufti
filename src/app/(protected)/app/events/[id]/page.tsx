@@ -57,7 +57,7 @@ export default async function EventDetailPage({
           <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Event Not Found</h2>
           <p className="text-gray-600 mb-4">
-            The event you're looking for doesn't exist or may have been deleted.
+            The event you&apos;re looking for doesn&apos;t exist or may have been deleted.
           </p>
           <Link href="/app/events">
             <Button variant="outline">

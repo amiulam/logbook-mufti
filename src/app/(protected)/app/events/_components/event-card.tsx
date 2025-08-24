@@ -4,7 +4,7 @@ import { Event, EventWithTools } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Play, Square, Eye, Trash, ToolCase, Image } from "lucide-react";
+import { Calendar, Eye, Trash, ToolCase, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import StartEventButton from "./start-event-button";
@@ -90,7 +90,7 @@ export default function EventCard({ event }: EventCardProps) {
             </div>
             {totalImages > 0 && (
               <div className="flex items-center gap-1">
-                <Image className="size-4" />
+                <ImageIcon className="size-4" />
                 <span>{totalImages} Images</span>
               </div>
             )}

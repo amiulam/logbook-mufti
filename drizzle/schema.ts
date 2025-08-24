@@ -17,6 +17,11 @@ export const eventStatusEnum = pgEnum("event_status", [
   "completed",
 ]);
 
+export const toolImageTypeEnum = pgEnum("image_type", [
+  "initial",
+  "final",
+]);
+
 // Table Schemas
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
@@ -56,7 +61,7 @@ export const toolImages = pgTable("tool_images", {
   publicUrl: text("public_url").notNull(),
   fileSize: integer("file_size").notNull(),
   fileType: text("file_type").notNull(),
-  imageType: text("image_type").notNull(), // 'initial' or 'final'
+  imageType: toolImageTypeEnum("image_type").notNull().default("initial"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

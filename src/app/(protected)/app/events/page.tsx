@@ -1,9 +1,8 @@
 // 'use client';
 
 // import { useState, useEffect } from 'react';
-import { Event } from "@/types";
-import { getAllEvents, startEvent, endEvent } from "@/services/events";
-import { getToolsByEventId } from "@/services/tools";
+import { getAllEvents } from "@/services/events";
+// import { getToolsByEventId } from "@/services/tools";
 import EventCard from "@/app/(protected)/app/events/_components/event-card";
 import CreateEventModal from "@/app/(protected)/app/events/_components/create-event-dialog";
 import EndEventDialog from "@/app/(protected)/app/events/_components/end-event-dialog";

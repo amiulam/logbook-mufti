@@ -39,7 +39,7 @@ export async function uploadToolImages(
       const uint8Array = new Uint8Array(arrayBuffer);
 
       // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
+      const { data , error } = await supabase.storage
         .from(TOOL_IMAGES_BUCKET)
         .upload(filePath, uint8Array, {
           contentType: file.type,

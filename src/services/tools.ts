@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { deleteToolImages } from "./storage";
 
 // Helper function to map database tool to Tool interface
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapDbToolToTool(dbTool: any): Tool {
   return {
     id: dbTool.id,
@@ -52,6 +53,7 @@ export async function createTool(toolData: unknown, eventId: number) {
   const validatedData = baseValidationResult.data;
 
   // Check if images are provided (this should be validated in the UI)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const imagesData = (toolData as any).images;
   if (!imagesData || imagesData.length === 0) {
     throw new Error("Minimal 1 foto kondisi awal harus diupload");
@@ -77,6 +79,7 @@ export async function updateTool(
   id: number,
   updates: Partial<Tool>
 ): Promise<Tool | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {
     updatedAt: new Date(),
   };

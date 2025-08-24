@@ -36,8 +36,12 @@ export type Tool = {
   images?: ToolImage[];
 }
 
+type ToolWithImages = Tool & {
+  images: ToolImage[];
+}
+
 export type EventWithTools = Event & {
-  tools: Tool[];
+  tools: ToolWithImages[];
 }
 
 export type ToolCondition = 'good' | 'damaged' | 'missing';

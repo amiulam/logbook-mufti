@@ -26,7 +26,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Plus, Upload, Loader2 } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { createTool, saveToolImages } from "@/services/tools";
 import { uploadToolImages } from "@/services/storage";
 import { useForm } from "react-hook-form";
@@ -217,7 +217,7 @@ export default function CreateToolDialog({ eventId }: AddToolModalProps) {
             <FormField
               control={form.control}
               name="images"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
                     Foto Kondisi Awal

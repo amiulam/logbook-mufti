@@ -36,7 +36,7 @@ export type Tool = {
   images?: ToolImage[];
 }
 
-type ToolWithImages = Tool & {
+export type ToolWithImages = Tool & {
   images: ToolImage[];
 }
 

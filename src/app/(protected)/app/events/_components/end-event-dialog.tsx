@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,8 +27,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Tool } from "@/types";
-import { updateToolConditions, saveToolImages } from "@/services/tools";
+import {
+  updateToolConditions,
+  saveToolImages,
+  getToolsByEventId,
+} from "@/services/tools";
 import { uploadToolImages } from "@/services/storage";
 import { endEvent } from "@/services/events";
 import { useEventStore } from "@/stores/eventStores";
@@ -39,17 +42,19 @@ import ImageUpload from "@/components/ImageUpload";
 import { Loader2 } from "lucide-react";
 import { TOOL_CONDITIONS } from "@/lib/constant";
 import { getConditionColor } from "@/lib/utils";
+import { ToolWithImages } from "@/types";
 
-type EndEventModalProps = {
-  tools: Tool[];
-};
+// type EndEventModalProps = {
+//   tools: Tool[];
+// };
 
-export default function EndEventModal({ tools }: EndEventModalProps) {
+export default function EndEventModal() {
   const [loading, setLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Record<number, File[]>>(
     {}
   );
   const [isUploading, setIsUploading] = useState(false);
+  const [tools, setTools] = useState<ToolWithImages[]>([]);
 
   const endEventModal = useEventStore((state) => state.endModalDialogOpen);
   const setEndEventModal = useEventStore(
@@ -67,6 +72,32 @@ export default function EndEventModal({ tools }: EndEventModalProps) {
       })),
     },
   });
+
+  // Fetch tools when modal opens
+  useEffect(() => {
+    const fetchTools = async () => {
+      if (endEventModal.open && endEventModal.eventId) {
+        try {
+          const toolsData = await getToolsByEventId(+endEventModal.eventId);
+          setTools(toolsData);
+
+          // Update form default values
+          form.reset({
+            toolConditions: toolsData.map((tool: ToolWithImages) => ({
+              toolId: tool.id,
+              finalCondition: "",
+              notes: "",
+              finalImages: [],
+            })),
+          });
+        } catch (error) {
+          console.error("Error fetching tools:", error);
+        }
+      }
+    };
+
+    fetchTools();
+  }, [endEventModal]);
 
   const handleImagesChange = (toolId: number, images: File[]) => {
     setSelectedImages((prev) => ({
@@ -124,6 +155,7 @@ export default function EndEventModal({ tools }: EndEventModalProps) {
       // Reset form and close dialog
       form.reset();
       setSelectedImages({});
+      setTools([]);
       setEndEventModal(false, null);
     } catch (error) {
       console.error("Error ending event:", error);

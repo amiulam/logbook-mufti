@@ -25,12 +25,16 @@ function mapDbToolToTool(dbTool: any): Tool {
   };
 }
 
-export async function getToolsByEventId(eventId: number): Promise<Tool[]> {
-  const dbTools = await db
-    .select()
-    .from(tools)
-    .where(eq(tools.eventId, eventId));
-  return dbTools.map(mapDbToolToTool);
+export async function getToolsByEventId(eventId: number) {
+  const toolsData = await db.query.tools.findMany({
+    where: eq(tools.eventId, eventId),
+    with: {
+      images: true,
+    },
+  });
+
+  return toolsData;
+  // return dbTools.map(mapDbToolToTool);
 }
 
 export async function getToolById(id: string): Promise<Tool | null> {

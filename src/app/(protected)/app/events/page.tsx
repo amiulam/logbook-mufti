@@ -120,7 +120,7 @@ export default async function Home() {
         )}
 
         */}
-        <EndEventDialog tools={events[0].tools} />
+        <EndEventDialog />
       </div>
     </div>
   );

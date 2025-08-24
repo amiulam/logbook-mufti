@@ -1,27 +1,47 @@
-export interface Event {
-  id: string;
+export type Event = {
+  id: number;
+  publicId: number;
   name: string;
-  assignmentLetter?: string;
+  assignmentLetter: string;
   status: 'not_started' | 'in_progress' | 'completed';
-  startDate?: string;
-  endDate?: string;
-  createdAt: string;
-  updatedAt: string;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface Tool {
-  id: string;
-  eventId: string;
+export type ToolImage = {
+  id: number;
+  toolId: number;
+  fileName: string;
+  filePath: string;
+  publicUrl: string;
+  fileSize: number;
+  fileType: string;
+  imageType: 'initial' | 'final';
+  createdAt: Date;
+}
+
+export type Tool = {
+  id: number;
+  eventId: number;
   name: string;
   category: string;
   total: number;
   initialCondition: string;
-  finalCondition?: string;
-  initialPicture?: string;
-  finalPicture?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  finalCondition: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  images?: ToolImage[];
 }
 
-export type ToolCondition = 'good' | 'damaged' | 'missing' | 'needs_repair';
+export type ToolWithImages = Tool & {
+  images: ToolImage[];
+}
+
+export type EventWithTools = Event & {
+  tools: ToolWithImages[];
+}
+
+export type ToolCondition = 'good' | 'damaged' | 'missing';

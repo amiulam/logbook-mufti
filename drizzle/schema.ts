@@ -6,7 +6,6 @@ import {
   timestamp,
   serial,
   pgEnum,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import z from "zod";
@@ -41,11 +40,24 @@ export const tools = pgTable("tools", {
   total: integer("total").notNull(),
   initialCondition: text("initial_condition").notNull(),
   finalCondition: text("final_condition"),
-  initialPicture: text("initial_picture"),
-  finalPicture: text("final_picture"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// New table for storing multiple images per tool
+export const toolImages = pgTable("tool_images", {
+  id: serial("id").primaryKey(),
+  toolId: integer("tool_id")
+    .references(() => tools.id, { onDelete: "cascade" })
+    .notNull(),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  publicUrl: text("public_url").notNull(),
+  fileSize: integer("file_size").notNull(),
+  fileType: text("file_type").notNull(),
+  imageType: text("image_type").notNull(), // 'initial' or 'final'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Relations
@@ -53,10 +65,18 @@ export const eventRelations = relations(events, ({ many }) => ({
   tools: many(tools),
 }));
 
-export const toolRelations = relations(tools, ({ one }) => ({
+export const toolRelations = relations(tools, ({ one, many }) => ({
   event: one(events, {
     fields: [tools.eventId],
     references: [events.id],
+  }),
+  images: many(toolImages),
+}));
+
+export const toolImageRelations = relations(toolImages, ({ one }) => ({
+  tool: one(tools, {
+    fields: [toolImages.toolId],
+    references: [tools.id],
   }),
 }));
 
@@ -72,3 +92,82 @@ export const eventInsertSchema = createInsertSchema(events, {
   name: true,
   assignmentLetter: true,
 });
+
+// Base tool schema without images
+export const toolBaseSchema = createInsertSchema(tools, {
+  name: z.string().min(1, {
+    error: "Nama alat harus diisi",
+  }),
+  category: z.string({
+    error: "Kategori harus diisi",
+  }),
+  total: z.string().min(1, {
+    error: "Jumlah minimal 1",
+  }),
+  initialCondition: z.string({
+    error: "Kondisi awal harus diisi",
+  }).min(1),
+}).pick({
+  name: true,
+  category: true,
+  total: true,
+  initialCondition: true,
+});
+
+// Extended schema with images validation
+export const toolInsertSchema = toolBaseSchema.extend({
+  images: z.array(z.any()).min(1, {
+    error: "Minimal 1 foto kondisi awal harus diupload",
+  }),
+});
+
+export const toolImageInsertSchema = createInsertSchema(toolImages, {
+  fileName: z.string().min(1, {
+    error: "Nama file harus diisi",
+  }),
+  filePath: z.string().min(1, {
+    error: "Path file harus diisi",
+  }),
+  publicUrl: z.string().url({
+    error: "URL file tidak valid",
+  }),
+  fileSize: z.number().positive({
+    error: "Ukuran file harus positif",
+  }),
+  fileType: z.string().min(1, {
+    error: "Tipe file harus diisi",
+  }),
+  imageType: z.enum(["initial", "final"], {
+    error: "Tipe image harus initial atau final",
+  }),
+}).pick({
+  fileName: true,
+  filePath: true,
+  publicUrl: true,
+  fileSize: true,
+  fileType: true,
+  imageType: true,
+});
+
+// Schema untuk end event dengan tool conditions
+export const endEventSchema = z.object({
+  toolConditions: z.array(z.object({
+    toolId: z.number(),
+    finalCondition: z.string().min(1, "Kondisi akhir harus diisi"),
+    notes: z.string().optional(),
+    finalImages: z.array(z.any()).min(1, "Minimal 1 foto kondisi akhir harus diupload"),
+  }))
+});
+
+// Type untuk end event form data
+export type EndEventFormData = z.infer<typeof endEventSchema>;
+
+// Schema untuk update tool conditions (tanpa images)
+export const updateToolConditionsSchema = z.array(z.object({
+  toolId: z.number().positive("Tool ID harus berupa angka positif"),
+  finalCondition: z.string().min(1, "Kondisi akhir harus diisi"),
+  notes: z.string().optional(),
+})).min(1, "Minimal 1 tool condition harus diupdate");
+
+// Type untuk update tool conditions
+export type UpdateToolConditionsData = z.infer<typeof updateToolConditionsSchema>;

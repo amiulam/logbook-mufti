@@ -8,6 +8,20 @@
       "when": 1755966525511,
       "tag": "0000_odd_mongoose",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1756002717685,
+      "tag": "0001_striped_blur",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756004342189,
+      "tag": "0002_youthful_mephisto",
+      "breakpoints": true
     }
   ]
 }

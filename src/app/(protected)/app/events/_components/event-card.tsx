@@ -4,9 +4,11 @@ import { Event, EventWithTools } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Play, Square, Eye, Trash } from "lucide-react";
+import { Calendar, Play, Square, Eye, Trash, ToolCase, Image } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+import StartEventButton from "./start-event-button";
+import EndEventButton from "./end-event-button";
 
 type EventCardProps = {
   event: EventWithTools;
@@ -40,6 +42,11 @@ export default function EventCard({ event }: EventCardProps) {
         return status;
     }
   };
+
+  // Calculate total images across all tools
+  const totalImages = event.tools.reduce((total, tool) => {
+    return total + (tool.images?.length || 0);
+  }, 0);
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-200">
@@ -75,34 +82,34 @@ export default function EventCard({ event }: EventCardProps) {
             </div>
           )}
 
+          {/* Tools and Images Summary */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2 border-t">
+            <div className="flex items-center gap-1">
+              <ToolCase className="size-4" />
+              <span>{event.tools.length} Tools</span>
+            </div>
+            {totalImages > 0 && (
+              <div className="flex items-center gap-1">
+                <Image className="size-4" />
+                <span>{totalImages} Images</span>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-2 pt-2">
             <Link href={`/app/events/${event.publicId}`}>
               <Button variant="outline" size="sm">
                 <Eye className="size-4" />
-                View
+                Detail
               </Button>
             </Link>
 
             {event.status === "not_started" && (
-              <Button
-                size="sm"
-                // onClick={() => onStart(event.id)}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Play className="size-4" />
-                Start
-              </Button>
+              <StartEventButton eventId={event.id} />
             )}
 
             {event.status === "in_progress" && (
-              <Button
-                size="sm"
-                variant="destructive"
-                // onClick={() => onEnd(event.id)}
-              >
-                <Square className="size-4" />
-                End
-              </Button>
+             <EndEventButton eventId={event.id} />
             )}
 
             {event.tools.length === 0 && event.status === "not_started" && (

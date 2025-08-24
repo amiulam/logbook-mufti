@@ -10,6 +10,18 @@ export type Event = {
   updatedAt: Date;
 }
 
+export type ToolImage = {
+  id: number;
+  toolId: number;
+  fileName: string;
+  filePath: string;
+  publicUrl: string;
+  fileSize: number;
+  fileType: string;
+  imageType: 'initial' | 'final';
+  createdAt: Date;
+}
+
 export type Tool = {
   id: number;
   eventId: number;
@@ -18,15 +30,14 @@ export type Tool = {
   total: number;
   initialCondition: string;
   finalCondition: string | null;
-  initialPicture: string | null;
-  finalPicture: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
+  images?: ToolImage[];
 }
 
 export type EventWithTools = Event & {
   tools: Tool[];
 }
 
-export type ToolCondition = 'good' | 'damaged' | 'missing' | 'needs_repair';
+export type ToolCondition = 'good' | 'damaged' | 'missing';

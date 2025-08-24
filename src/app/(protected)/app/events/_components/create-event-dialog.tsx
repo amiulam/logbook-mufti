@@ -37,23 +37,20 @@ export default function CreateEventModal() {
   });
 
   const {
+    handleSubmit,
     reset,
     formState: { isSubmitting, isDirty },
   } = form;
 
   const onSubmit = async (values: z.infer<typeof eventInsertSchema>) => {
-    console.log(values);
-
     try {
-      const event = await createEvent({
+      await createEvent({
         name: values.name.trim(),
         assignmentLetter: values.assignmentLetter.trim(),
         status: "not_started",
       });
 
-      console.log(event);
       reset();
-      
       setOpen(false);
     } catch (error) {
       console.error("Error creating event:", error);
@@ -76,7 +73,7 @@ export default function CreateEventModal() {
           <DialogTitle>Buat Kegiatan Baru</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"

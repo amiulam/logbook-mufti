@@ -6,7 +6,7 @@ import { getAllEvents, startEvent, endEvent } from "@/services/events";
 import { getToolsByEventId } from "@/services/tools";
 import EventCard from "@/app/(protected)/app/events/_components/event-card";
 import CreateEventModal from "@/app/(protected)/app/events/_components/create-event-dialog";
-import EndEventModal from "@/app/(protected)/app/events/_components/EndEventModal";
+import EndEventDialog from "@/app/(protected)/app/events/_components/end-event-dialog";
 
 export default async function Home() {
   const events = await getAllEvents();
@@ -37,19 +37,6 @@ export default async function Home() {
 
   // const handleEventCreated = async (event: Event) => {
   //   setEvents(prev => [event, ...prev]);
-  // };
-
-  // const handleStartEvent = async (eventId: string) => {
-  //   try {
-  //     const updatedEvent = await startEvent(eventId);
-  //     if (updatedEvent) {
-  //       setEvents(prev => prev.map(event =>
-  //         event.id === eventId ? updatedEvent : event
-  //       ));
-  //     }
-  //   } catch (error) {
-  //     console.error('Error starting event:', error);
-  //   }
   // };
 
   // const handleEndEvent = async (eventId: string) => {
@@ -133,12 +120,8 @@ export default async function Home() {
           </div>
         )}
 
-        <EndEventModal
-          open={endEventModal.open}
-          onOpenChange={(open) => setEndEventModal({ open, eventId: null })}
-          tools={currentTools}
-          onConfirm={() => confirmEndEvent(endEventModal.eventId!)}
-        /> */}
+        */}
+        <EndEventDialog tools={events[0].tools} />
       </div>
     </div>
   );

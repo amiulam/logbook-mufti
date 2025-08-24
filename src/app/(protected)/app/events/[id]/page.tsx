@@ -12,7 +12,7 @@ import { ArrowLeft, Calendar, Play, Square, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import ToolCard from "@/components/ToolCard";
-import AddToolDialog from "@/app/(protected)/app/events/_components/add-tool-dialog";
+import CreateToolDialog from "@/app/(protected)/app/events/_components/create-tool-dialog";
 // import EndEventModal from "@/app/(protected)/app/events/_components/EndEventModal";
 import { getEventById } from "@/services/events";
 
@@ -136,17 +136,6 @@ export default async function EventDetailPage({
   //   setTools(prev => [tool, ...prev]);
   // };
 
-  // const handleToolDeleted = async (toolId: string) => {
-  //   try {
-  //     // const success = await deleteTool(toolId);
-  //     // if (success) {
-  //     //   setTools(prev => prev.filter(tool => tool.id !== toolId));
-  //     // }
-  //   } catch (error) {
-  //     console.error('Error deleting tool:', error);
-  //   }
-  // };
-
   const getStatusColor = (status: Event["status"]) => {
     switch (status) {
       case "not_started":
@@ -179,8 +168,8 @@ export default async function EventDetailPage({
         <div className="mb-6">
           <Link href="/app/events">
             <Button variant="outline" className="mb-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Events
+              <ArrowLeft className="size-4" />
+              Kembali
             </Button>
           </Link>
         </div>
@@ -268,9 +257,9 @@ export default async function EventDetailPage({
           {/* Tools Section */}
           <div className="lg:col-span-2">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold">Tools ({event.tools.length})</h2>
+              <h2 className="text-2xl font-semibold">Alat ({event.tools.length})</h2>
               {event.status !== "completed" && (
-                <AddToolDialog
+                <CreateToolDialog
                   eventId={event.id}
                   // onToolAdded={handleToolAdded}
                 />
@@ -281,14 +270,8 @@ export default async function EventDetailPage({
               <Card>
                 <CardContent className="py-12 text-center">
                   <div className="text-muted-foreground mb-4">
-                    No tools assigned to this event yet.
+                    Daftar alat belum tersedia untuk kegiatan ini.
                   </div>
-                  {event.status !== "completed" && (
-                    <AddToolDialog
-                      eventId={event.id}
-                      // onToolAdded={handleToolAdded}
-                    />
-                  )}
                 </CardContent>
               </Card>
             ) : (

@@ -24,11 +24,14 @@ function mapDbEventToEvent(dbEvent: any): Event {
 export async function getAllEvents() {
   const eventList = await db.query.events.findMany({
     with: {
-      tools: true,
+      tools: {
+        with: {
+          images: true,
+        }
+      },
     },
   });
   return eventList;
-  // return dbEvents.map(mapDbEventToEvent);
 }
 
 export async function getEventById(publicId: string) {
@@ -55,7 +58,6 @@ export async function createEvent(eventData: unknown): Promise<Event> {
 
   const validatedData = validationResult.data;
 
-  const now = new Date();
   const [dbEvent] = await db
     .insert(events)
     .values({
@@ -70,7 +72,7 @@ export async function createEvent(eventData: unknown): Promise<Event> {
 }
 
 export async function updateEvent(
-  id: string,
+  id: number,
   updates: Partial<Event>
 ): Promise<Event | null> {
   const updateData: any = {
@@ -91,8 +93,10 @@ export async function updateEvent(
   const dbEvent = await db
     .update(events)
     .set(updateData)
-    .where(eq(events.id, parseInt(id)))
+    .where(eq(events.id, id))
     .returning();
+
+  revalidatePath("/app/event", "layout");
 
   return dbEvent.length > 0 ? mapDbEventToEvent(dbEvent[0]) : null;
 }
@@ -102,14 +106,22 @@ export async function deleteEvent(id: string): Promise<boolean> {
   return result.count > 0;
 }
 
-export async function startEvent(id: string): Promise<Event | null> {
-  return updateEvent(id, {
-    status: "in_progress",
-    startDate: new Date().toISOString(),
-  });
+export async function startEvent(id: number) {
+  await db
+    .update(events)
+    .set({
+      status: "in_progress",
+      startDate: new Date().toISOString(),
+    })
+    .where(eq(events.id, id))
+    .returning();
+
+  revalidatePath("/app", "layout");
+
+  // return dbEvent ? mapDbEventToEvent(dbEvent) : null;
 }
 
-export async function endEvent(id: string): Promise<Event | null> {
+export async function endEvent(id: number): Promise<Event | null> {
   return updateEvent(id, {
     status: "completed",
     endDate: new Date().toISOString(),

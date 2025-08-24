@@ -1,56 +1,82 @@
-import { Tool } from '@/types';
-import { db } from '../lib/db';
-import { tools } from '../../drizzle/schema';
-import { eq } from 'drizzle-orm';
+"use server";
+
+import { Tool } from "@/types";
+import { db } from "../lib/db";
+import { toolBaseSchema, tools, toolImages, updateToolConditionsSchema, UpdateToolConditionsData } from "../../drizzle/schema";
+import { eq, inArray } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { deleteToolImages } from "./storage";
 
 // Helper function to map database tool to Tool interface
 function mapDbToolToTool(dbTool: any): Tool {
   return {
-    id: dbTool.id.toString(),
-    eventId: dbTool.eventId.toString(),
+    id: dbTool.id,
+    eventId: dbTool.eventId,
     name: dbTool.name,
     category: dbTool.category,
     total: dbTool.total,
     initialCondition: dbTool.initialCondition,
     finalCondition: dbTool.finalCondition || undefined,
-    initialPicture: dbTool.initialPicture || undefined,
-    finalPicture: dbTool.finalPicture || undefined,
     notes: dbTool.notes || undefined,
-    createdAt: dbTool.createdAt.toISOString(),
-    updatedAt: dbTool.updatedAt.toISOString(),
+    createdAt: dbTool.createdAt,
+    updatedAt: dbTool.updatedAt,
+    images: dbTool.images || [],
   };
 }
 
 export async function getToolsByEventId(eventId: number): Promise<Tool[]> {
-  const dbTools = await db.select().from(tools).where(eq(tools.eventId, eventId));
+  const dbTools = await db
+    .select()
+    .from(tools)
+    .where(eq(tools.eventId, eventId));
   return dbTools.map(mapDbToolToTool);
 }
 
 export async function getToolById(id: string): Promise<Tool | null> {
-  const dbTool = await db.select().from(tools).where(eq(tools.id, parseInt(id))).limit(1);
+  const dbTool = await db
+    .select()
+    .from(tools)
+    .where(eq(tools.id, parseInt(id)))
+    .limit(1);
   return dbTool.length > 0 ? mapDbToolToTool(dbTool[0]) : null;
 }
 
-export async function createTool(toolData: Omit<Tool, 'id' | 'createdAt' | 'updatedAt'>): Promise<Tool> {
-  const now = new Date();
-  const [dbTool] = await db.insert(tools).values({
-    eventId: toolData.eventId,
-    name: toolData.name,
-    category: toolData.category,
-    total: toolData.total,
-    initialCondition: toolData.initialCondition,
-    finalCondition: toolData.finalCondition,
-    initialPicture: toolData.initialPicture,
-    finalPicture: toolData.finalPicture,
-    notes: toolData.notes,
-    createdAt: now,
-    updatedAt: now,
-  }).returning();
+export async function createTool(toolData: unknown, eventId: number) {
+  // First validate the base tool data
+  const baseValidationResult = toolBaseSchema.safeParse(toolData);
 
-  return mapDbToolToTool(dbTool);
+  if (!baseValidationResult.success) {
+    throw new Error(`Validation failed: ${baseValidationResult.error.message}`);
+  }
+
+  const validatedData = baseValidationResult.data;
+
+  // Check if images are provided (this should be validated in the UI)
+  const imagesData = (toolData as any).images;
+  if (!imagesData || imagesData.length === 0) {
+    throw new Error("Minimal 1 foto kondisi awal harus diupload");
+  }
+
+  const [dbTool] = await db
+    .insert(tools)
+    .values({
+      eventId: eventId,
+      name: validatedData.name,
+      category: validatedData.category,
+      total: +validatedData.total,
+      initialCondition: validatedData.initialCondition,
+    })
+    .returning();
+
+  revalidatePath('/app/events', 'page');
+  
+  return dbTool;
 }
 
-export async function updateTool(id: string, updates: Partial<Tool>): Promise<Tool | null> {
+export async function updateTool(
+  id: number,
+  updates: Partial<Tool>
+): Promise<Tool | null> {
   const updateData: any = {
     updatedAt: new Date(),
   };
@@ -59,33 +85,156 @@ export async function updateTool(id: string, updates: Partial<Tool>): Promise<To
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.category !== undefined) updateData.category = updates.category;
   if (updates.total !== undefined) updateData.total = updates.total;
-  if (updates.initialCondition !== undefined) updateData.initialCondition = updates.initialCondition;
-  if (updates.finalCondition !== undefined) updateData.finalCondition = updates.finalCondition;
-  if (updates.initialPicture !== undefined) updateData.initialPicture = updates.initialPicture;
-  if (updates.finalPicture !== undefined) updateData.finalPicture = updates.finalPicture;
+  if (updates.initialCondition !== undefined)
+    updateData.initialCondition = updates.initialCondition;
+  if (updates.finalCondition !== undefined)
+    updateData.finalCondition = updates.finalCondition;
   if (updates.notes !== undefined) updateData.notes = updates.notes;
 
-  const dbTool = await db.update(tools)
+  const dbTool = await db
+    .update(tools)
     .set(updateData)
-    .where(eq(tools.id, parseInt(id)))
+    .where(eq(tools.id, id))
     .returning();
 
   return dbTool.length > 0 ? mapDbToolToTool(dbTool[0]) : null;
 }
 
-export async function deleteTool(id: string): Promise<boolean> {
-  const result = await db.delete(tools).where(eq(tools.id, parseInt(id)));
-  return result.count > 0;
+export async function deleteTool(id: number): Promise<boolean> {
+  try {
+    // Get tool images first before deletion
+    const toolImages = await getToolImages(id);
+    
+    // Delete images from Supabase Storage if any exist
+    if (toolImages.length > 0) {
+      const filePaths = toolImages.map(img => img.filePath);
+      await deleteToolImages(filePaths);
+    }
+
+    // Delete tool from database (this will cascade delete tool_images due to foreign key)
+    const result = await db.delete(tools).where(eq(tools.id, id));
+    
+    // Revalidate paths
+    revalidatePath('/app/events', 'page');
+    
+    return result.count > 0;
+  } catch (error) {
+    console.error('Error deleting tool with cleanup:', error);
+    throw error; // Re-throw error untuk handling di UI
+  }
 }
 
-export async function updateToolConditions(toolConditions: { toolId: string; finalCondition: string; notes?: string }[]): Promise<boolean> {
+// // Function untuk delete multiple tools dengan cleanup
+// export async function deleteMultipleTools(toolIds: number[]): Promise<boolean> {
+//   try {
+//     if (!toolIds || toolIds.length === 0) {
+//       throw new Error("Tool IDs tidak boleh kosong");
+//     }
+
+//     // Get all tool images before deletion
+//     const allToolImages = await Promise.all(
+//       toolIds.map(id => getToolImages(id))
+//     );
+    
+//     // Flatten and collect all file paths
+//     const allFilePaths = allToolImages.flat().map(img => img.filePath);
+    
+//     // Delete all images from Supabase Storage if any exist
+//     if (allFilePaths.length > 0) {
+//       await deleteToolImages(allFilePaths);
+//     }
+
+//     // Delete all tools from database
+//     const result = await db.delete(tools).where(inArray(tools.id, toolIds));
+    
+//     // Revalidate paths
+//     revalidatePath('/app/events', 'page');
+    
+//     return result.count > 0;
+//   } catch (error) {
+//     console.error('Error deleting multiple tools with cleanup:', error);
+//     throw error; // Re-throw error untuk handling di UI
+//   }
+// }
+
+export async function updateToolConditions(
+  toolConditions: UpdateToolConditionsData
+): Promise<boolean> {
   try {
-    await Promise.all(toolConditions.map(async ({ toolId, finalCondition, notes }) => {
-      await updateTool(toolId, { finalCondition, notes });
-    }));
+    // Validate input data dengan Zod schema
+    const validationResult = updateToolConditionsSchema.safeParse(toolConditions);
+
+    if (!validationResult.success) {
+      throw new Error(`Validation failed: ${validationResult.error.message}`);
+    }
+
+    const validatedData = validationResult.data;
+
+    // Update tool conditions
+    await Promise.all(
+      validatedData.map(async ({ toolId, finalCondition, notes }) => {
+        const result = await updateTool(toolId, { finalCondition, notes });
+        if (!result) {
+          throw new Error(`Gagal update tool dengan ID ${toolId}`);
+        }
+      })
+    );
+
+    // Revalidate paths
+    revalidatePath('/app/events', 'page');
+
     return true;
   } catch (error) {
     console.error('Error updating tool conditions:', error);
-    return false;
+    throw error; // Re-throw error untuk handling di UI
+  }
+}
+
+// New function to save tool images to database
+export async function saveToolImages(
+  toolId: number,
+  images: Array<{
+    fileName: string;
+    filePath: string;
+    publicUrl: string;
+    fileSize: number;
+    fileType: string;
+    imageType: 'initial' | 'final';
+  }>
+): Promise<void> {
+  try {
+    if (images.length === 0) return;
+
+    await db.insert(toolImages).values(
+      images.map(image => ({
+        toolId,
+        fileName: image.fileName,
+        filePath: image.filePath,
+        publicUrl: image.publicUrl,
+        fileSize: image.fileSize,
+        fileType: image.fileType,
+        imageType: image.imageType,
+      }))
+    );
+
+    revalidatePath('/app/events', 'page');
+  } catch (error) {
+    console.error('Error saving tool images:', error);
+    throw error;
+  }
+}
+
+// Function to get tool images
+export async function getToolImages(toolId: number) {
+  try {
+    const images = await db
+      .select()
+      .from(toolImages)
+      .where(eq(toolImages.toolId, toolId));
+    
+    return images;
+  } catch (error) {
+    console.error('Error getting tool images:', error);
+    return [];
   }
 }

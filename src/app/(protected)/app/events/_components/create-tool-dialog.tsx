@@ -34,7 +34,7 @@ import z from "zod";
 import { toolBaseSchema } from "@/../drizzle/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { TOOL_CATEGORIES, TOOL_CONDITIONS } from "@/lib/constant";
-import ImageUpload from "@/components/ImageUpload";
+import ImageUpload from "@/components/image-upload";
 
 type AddToolModalProps = {
   eventId: number;

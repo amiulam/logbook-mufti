@@ -1,20 +1,15 @@
-// "use client";
-
-// import { useState, useEffect } from 'react';
-// import { useRouter } from 'next/navigation';
 import { Event } from "@/types";
-// import { getEventById, startEvent, endEvent } from '@/services/events';
-// import { getToolsByEventId, deleteTool } from '@/services/tools';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Calendar, Play, Square, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Calendar, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
-import ToolCard from "@/components/ToolCard";
+import ToolCard from "@/app/(protected)/app/events/_components/tool-card";
 import CreateToolDialog from "@/app/(protected)/app/events/_components/create-tool-dialog";
-// import EndEventModal from "@/app/(protected)/app/events/_components/EndEventModal";
 import { getEventById } from "@/services/events";
+import StartEventButton from "../_components/start-event-button";
+import EndEventButton from "../_components/end-event-button";
 
 type EventDetailPageProps = {
   id: string;
@@ -26,7 +21,7 @@ export default async function EventDetailPage({
   params: Promise<EventDetailPageProps>;
 }) {
   const { id } = await params;
-  
+
   // Check if id is a valid number
   if (isNaN(Number(id))) {
     return (
@@ -47,7 +42,7 @@ export default async function EventDetailPage({
       </div>
     );
   }
-  
+
   const event = await getEventById(id);
 
   if (!event) {
@@ -57,7 +52,8 @@ export default async function EventDetailPage({
           <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Event Not Found</h2>
           <p className="text-gray-600 mb-4">
-            The event you&apos;re looking for doesn&apos;t exist or may have been deleted.
+            The event you&apos;re looking for doesn&apos;t exist or may have
+            been deleted.
           </p>
           <Link href="/app/events">
             <Button variant="outline">
@@ -69,72 +65,6 @@ export default async function EventDetailPage({
       </div>
     );
   }
-
-  // const tools = await getToolsByEventId(event.id);
-  // const router = useRouter();
-  // const [event, setEvent] = useState<Event | null>(null);
-  // const [tools, setTools] = useState<Tool[]>([]);
-  // const [endEventModal, setEndEventModal] = useState(false);
-
-  // const {id} = use(params);
-
-  // // const event = getEventById(id);
-
-  // useEffect(() => {
-  //   loadEventData();
-  // }, [id, router]);
-
-  // const loadEventData = async () => {
-  //   try {
-  //     // const eventData = await getEventById(id);
-  //     // if (!eventData) {
-  //     //   router.push('/');
-  //     //   return;
-  //     // }
-
-  //     // setEvent(eventData);
-  //     // const toolsData = await getToolsByEventId(id);
-  //     // setTools(toolsData);
-  //   } catch (error) {
-  //     console.error('Error loading event data:', error);
-  //     router.push('/');
-  //   }
-  // };
-
-  // const handleStartEvent = async () => {
-  //   try {
-  //     // const updatedEvent = await startEvent(event.id);
-  //     // if (updatedEvent) {
-  //     //   setEvent(updatedEvent);
-  //     // }
-  //   } catch (error) {
-  //     console.error('Error starting event:', error);
-  //   }
-  // };
-
-  // const handleEndEvent = () => {
-  //   if (tools.length > 0) {
-  //     setEndEventModal(true);
-  //   } else {
-  //     confirmEndEvent();
-  //   }
-  // };
-
-  // const confirmEndEvent = async () => {
-  //   try {
-  //     // const updatedEvent = await endEvent(event.id);
-  //     // if (updatedEvent) {
-  //     //   setEvent(updatedEvent);
-  //     // }
-  //     setEndEventModal(false);
-  //   } catch (error) {
-  //     console.error('Error ending event:', error);
-  //   }
-  // };
-
-  // const handleToolAdded = async (tool: Tool) => {
-  //   setTools(prev => [tool, ...prev]);
-  // };
 
   const getStatusColor = (status: Event["status"]) => {
     switch (status) {
@@ -187,19 +117,22 @@ export default async function EventDetailPage({
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {event.assignmentLetter && (
+                {event.document && (
                   <div>
                     <span className="text-sm text-muted-foreground">
-                      Assignment Letter:
+                      Surat Tugas :
                     </span>
-                    <p className="font-medium">{event.assignmentLetter}</p>
+                    <Link
+                      href={event.document?.publicUrl}
+                      className="hover:underline underline-offset-3"
+                    >
+                      {event.assignmentLetter}
+                    </Link>
                   </div>
                 )}
 
                 <div>
-                  <span className="text-sm text-muted-foreground">
-                    Created:
-                  </span>
+                  <span className="text-sm text-muted-foreground">Dibuat:</span>
                   <p className="font-medium flex items-center">
                     <Calendar className="w-4 h-4 mr-2" />
                     {format(new Date(event.createdAt), "MMM dd, yyyy HH:mm")}
@@ -230,24 +163,11 @@ export default async function EventDetailPage({
 
                 <div className="pt-4 space-y-2">
                   {event.status === "not_started" && (
-                    <Button
-                      // onClick={handleStartEvent}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      Start Event
-                    </Button>
+                    <StartEventButton eventId={event.id} />
                   )}
 
                   {event.status === "in_progress" && (
-                    <Button
-                      // onClick={handleEndEvent}
-                      variant="destructive"
-                      className="w-full"
-                    >
-                      <Square className="w-4 h-4 mr-2" />
-                      End Event
-                    </Button>
+                    <EndEventButton eventId={event.id} />
                   )}
                 </div>
               </CardContent>
@@ -257,7 +177,9 @@ export default async function EventDetailPage({
           {/* Tools Section */}
           <div className="lg:col-span-2">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold">Alat ({event.tools.length})</h2>
+              <h2 className="text-2xl font-semibold">
+                Alat ({event.tools.length})
+              </h2>
               {event.status !== "completed" && (
                 <CreateToolDialog
                   eventId={event.id}
@@ -280,20 +202,13 @@ export default async function EventDetailPage({
                   <ToolCard
                     key={tool.id}
                     tool={tool}
-                    // onDelete={handleToolDeleted}
+                    eventStatus={event.status}
                   />
                 ))}
               </div>
             )}
           </div>
         </div>
-
-        {/* <EndEventModal
-          open={endEventModal}
-          onOpenChange={setEndEventModal}
-          tools={tools}
-          onConfirm={confirmEndEvent}
-        /> */}
       </div>
     </div>
   );

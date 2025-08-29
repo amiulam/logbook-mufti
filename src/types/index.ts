@@ -3,12 +3,24 @@ export type Event = {
   publicId: number;
   name: string;
   assignmentLetter: string;
-  status: 'not_started' | 'in_progress' | 'completed';
+  status: "not_started" | "in_progress" | "completed";
   startDate: string | null;
   endDate: string | null;
   createdAt: Date;
   updatedAt: Date;
-}
+};
+
+export type EventDocument = {
+  id: number;
+  eventId: number;
+  fileName: string;
+  filePath: string;
+  publicUrl: string;
+  fileSize: number;
+  fileType: string;
+  documentType: string;
+  createdAt: Date;
+};
 
 export type ToolImage = {
   id: number;
@@ -18,9 +30,9 @@ export type ToolImage = {
   publicUrl: string;
   fileSize: number;
   fileType: string;
-  imageType: 'initial' | 'final';
+  imageType: "initial" | "final";
   createdAt: Date;
-}
+};
 
 export type Tool = {
   id: number;
@@ -34,14 +46,16 @@ export type Tool = {
   createdAt: Date;
   updatedAt: Date;
   images?: ToolImage[];
-}
+};
 
 export type ToolWithImages = Tool & {
   images: ToolImage[];
-}
+};
 
 export type EventWithTools = Event & {
   tools: ToolWithImages[];
-}
+  document: EventDocument | null;
+};
 
-export type ToolCondition = 'good' | 'damaged' | 'missing';
+export type ToolCondition = "good" | "damaged" | "missing";
+export type ToolCategories = "audio" | "video" | "jaringan" | "utility";

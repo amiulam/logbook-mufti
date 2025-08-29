@@ -12,11 +12,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Storage bucket name for tool images
 export const TOOL_IMAGES_BUCKET = 'tool-images';
 
+// Storage bucket name for event documents
+export const EVENT_DOCUMENTS_BUCKET = 'event-document';
+
 // Helper function to generate unique file names
 export function generateFileName(originalName: string, toolId: number, type: 'initial' | 'final'): string {
   const timestamp = Date.now();
   const extension = originalName.split('.').pop();
   return `${toolId}_${type}_${timestamp}.${extension}`;
+}
+
+// Helper function to generate unique file names for documents
+export function generateDocumentFileName(originalName: string, eventId: number, documentType: string): string {
+  const timestamp = Date.now();
+  const extension = originalName.split('.').pop();
+  return `${eventId}_${documentType}_${timestamp}.${extension}`;
 }
 
 // Helper function to get public URL for uploaded images

@@ -5,72 +5,88 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
-interface ImageFile {
+type ImageFile = {
   file: File;
   id: string;
   preview: string;
-}
+};
 
-interface ImageUploadProps {
+type ImageUploadProps = {
   onImagesChange: (images: File[]) => void;
   maxImages?: number;
   className?: string;
   required?: boolean;
   error?: string;
-}
+};
 
-export default function ImageUpload({ 
-  onImagesChange, 
-  maxImages = 5, 
+export default function ImageUpload({
+  onImagesChange,
+  maxImages = 5,
   className,
   required = false,
-  error
+  error,
 }: ImageUploadProps) {
   const [images, setImages] = useState<ImageFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImagesChange = useCallback((newImages: ImageFile[]) => {
-    setImages(newImages);
-    onImagesChange(newImages.map(img => img.file));
-  }, [onImagesChange]);
+  const handleImagesChange = useCallback(
+    (newImages: ImageFile[]) => {
+      setImages(newImages);
+      onImagesChange(newImages.map((img) => img.file));
+    },
+    [onImagesChange]
+  );
 
-  const addImages = useCallback((files: FileList | File[]) => {
-    const newImages: ImageFile[] = [];
-    
-    Array.from(files).forEach((file) => {
-      if (file.type.startsWith('image/') && images.length + newImages.length < maxImages) {
-        const id = Math.random().toString(36).substr(2, 9);
-        const preview = URL.createObjectURL(file);
-        newImages.push({ file, id, preview });
+  const addImages = useCallback(
+    (files: FileList | File[]) => {
+      const newImages: ImageFile[] = [];
+
+      Array.from(files).forEach((file) => {
+        if (
+          file.type.startsWith("image/") &&
+          images.length + newImages.length < maxImages
+        ) {
+          const id = Math.random().toString(36).substr(2, 9);
+          const preview = URL.createObjectURL(file);
+          newImages.push({ file, id, preview });
+        }
+      });
+
+      if (newImages.length > 0) {
+        handleImagesChange([...images, ...newImages]);
       }
-    });
+    },
+    [images, maxImages, handleImagesChange]
+  );
 
-    if (newImages.length > 0) {
-      handleImagesChange([...images, ...newImages]);
-    }
-  }, [images, maxImages, handleImagesChange]);
+  const removeImage = useCallback(
+    (id: string) => {
+      const imageToRemove = images.find((img) => img.id === id);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
 
-  const removeImage = useCallback((id: string) => {
-    const imageToRemove = images.find(img => img.id === id);
-    if (imageToRemove) {
-      URL.revokeObjectURL(imageToRemove.preview);
-    }
-    
-    const newImages = images.filter(img => img.id !== id);
-    handleImagesChange(newImages);
-  }, [images, handleImagesChange]);
+      const newImages = images.filter((img) => img.id !== id);
+      handleImagesChange(newImages);
+    },
+    [images, handleImagesChange]
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    
-    if (e.dataTransfer.files) {
-      addImages(e.dataTransfer.files);
-    }
-  }, [addImages]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+
+      if (e.dataTransfer.files) {
+        addImages(e.dataTransfer.files);
+      }
+    },
+    [addImages]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -84,12 +100,15 @@ export default function ImageUpload({
     setIsDragOver(false);
   }, []);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    if (e.target.files) {
-      addImages(e.target.files);
-    }
-  }, [addImages]);
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      if (e.target.files) {
+        addImages(e.target.files);
+      }
+    },
+    [addImages]
+  );
 
   const handleUploadClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -103,26 +122,28 @@ export default function ImageUpload({
       <Card
         className={cn(
           "border-2 border-dashed p-6 text-center transition-colors relative",
-          isDragOver 
-            ? "border-primary bg-primary/5" 
-            : error 
-              ? "border-red-500 bg-red-50" 
-              : "border-muted-foreground/25 hover:border-muted-foreground/50"
+          {
+            "border-primary bg-primary/5": isDragOver,
+            "border-red-500 bg-red-50": error,
+          }
         )}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
         <div className="flex flex-col items-center space-y-2">
-          <Upload className={cn(
-            "size-8",
-            error ? "text-red-500" : "text-muted-foreground"
-          )} />
-          <div className={cn(
-            "text-sm",
-            error ? "text-red-600" : "text-muted-foreground"
-          )}>
-            <span className="font-medium">Click to upload</span> or drag and drop
+          <Upload
+            className={cn("size-8 text-muted-foreground", {
+              "text-red-500": error,
+            })}
+          />
+          <div
+            className={cn("text-sm text-muted-foreground", {
+              "text-red-600": error,
+            })}
+          >
+            <span className="font-medium">Click to upload</span> or drag and
+            drop
           </div>
           <div className="text-xs text-muted-foreground">
             PNG, JPG, GIF up to 5MB each
@@ -136,7 +157,7 @@ export default function ImageUpload({
             </div>
           )}
         </div>
-        
+
         {/* File input untuk drag & drop area */}
         <input
           ref={fileInputRef}
@@ -150,9 +171,7 @@ export default function ImageUpload({
       </Card>
 
       {/* Error Message */}
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       {/* Image Preview */}
       {images.length > 0 && (
@@ -160,9 +179,11 @@ export default function ImageUpload({
           {images.map((image) => (
             <div key={image.id} className="relative group">
               <Card className="overflow-hidden">
-                <img
+                <Image
                   src={image.preview}
                   alt={image.file.name}
+                  height={500}
+                  width={500}
                   className="size-40 object-cover"
                 />
                 <div className="p-2">
@@ -174,7 +195,7 @@ export default function ImageUpload({
                   </p>
                 </div>
               </Card>
-              
+
               {/* Remove Button */}
               <Button
                 size="sm"
@@ -202,7 +223,9 @@ export default function ImageUpload({
           className="relative"
         >
           <ImageIcon className="size-4 mr-2" />
-          {images.length >= maxImages ? 'Max images reached' : 'Add More Images'}
+          {images.length >= maxImages
+            ? "Max images reached"
+            : "Add More Images"}
         </Button>
       </div>
     </div>

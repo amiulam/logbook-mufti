@@ -2,24 +2,12 @@
 
 import { Event } from "@/types";
 import { db } from "../lib/db";
-import { eventInsertSchema, events } from "@/../drizzle/schema";
+import { eventInsertSchema, events, eventDocuments } from "@/../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-
-// Helper function to map database event to Event interface
-// function mapDbEventToEvent(dbEvent: any): Event {
-//   return {
-//     id: dbEvent.id.toString(),
-//     publicId: dbEvent.public_id,
-//     name: dbEvent.name,
-//     assignmentLetter: dbEvent.assignmentLetter || undefined,
-//     status: dbEvent.status as Event["status"],
-//     startDate: dbEvent.startDate?.toISOString() || undefined,
-//     endDate: dbEvent.endDate?.toISOString() || undefined,
-//     createdAt: dbEvent.createdAt.toISOString(),
-//     updatedAt: dbEvent.updatedAt.toISOString(),
-//   };
-// }
+import { deleteEventDocuments, UploadedDocument } from "./storage";
+import { deleteTool, getToolsByEventId } from "./tools";
+import { updateEventSchema } from "@/schemas";
 
 export async function getAllEvents() {
   const eventList = await db.query.events.findMany({
@@ -29,6 +17,7 @@ export async function getAllEvents() {
           images: true,
         }
       },
+      document: true,
     },
   });
   return eventList;
@@ -39,6 +28,7 @@ export async function getEventById(publicId: string) {
     where: eq(events.publicId, +publicId),
     with: {
       tools: true,
+      document: true,
     },
   });
 
@@ -73,23 +63,28 @@ export async function createEvent(eventData: unknown): Promise<Event> {
 
 export async function updateEvent(
   id: number,
-  updates: Partial<Event>
+  updates: unknown
 ): Promise<Event | null> {
+  const validation = updateEventSchema.safeParse(updates);
+  if (!validation.success) {
+    throw new Error(`Validation failed: ${validation.error.message}`);
+  }
+
+  const validated = validation.data;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {
     updatedAt: new Date(),
   };
 
-  if (updates.name !== undefined) updateData.name = updates.name;
-  if (updates.assignmentLetter !== undefined)
-    updateData.assignmentLetter = updates.assignmentLetter;
-  if (updates.status !== undefined) updateData.status = updates.status;
-  if (updates.startDate !== undefined)
-    updateData.startDate = updates.startDate
-      ? new Date(updates.startDate)
-      : null;
-  if (updates.endDate !== undefined)
-    updateData.endDate = updates.endDate ? new Date(updates.endDate) : null;
+  if (validated.name !== undefined) updateData.name = validated.name;
+  if (validated.assignmentLetter !== undefined)
+    updateData.assignmentLetter = validated.assignmentLetter;
+  if (validated.status !== undefined) updateData.status = validated.status;
+  if (validated.startDate !== undefined)
+    updateData.startDate = validated.startDate ? new Date(validated.startDate) : null;
+  if (validated.endDate !== undefined)
+    updateData.endDate = validated.endDate ? new Date(validated.endDate) : null;
 
   const dbEvent = await db
     .update(events)
@@ -97,14 +92,49 @@ export async function updateEvent(
     .where(eq(events.id, id))
     .returning();
 
-  revalidatePath("/app/event", "layout");
+  revalidatePath("/app/events", "page");
 
   return dbEvent.length > 0 ? dbEvent[0] : null;
 }
 
-export async function deleteEvent(id: string): Promise<boolean> {
-  const result = await db.delete(events).where(eq(events.id, parseInt(id)));
-  return result.count > 0;
+export async function deleteEvent(id: number): Promise<boolean> {
+  try {
+    // Get all tools for this event first
+    const eventTools = await getToolsByEventId(id);
+
+    // Delete all tools (this will cascade delete tool images due to foreign key)
+    if (eventTools.length > 0) {
+      await Promise.all(
+        eventTools.map(tool => deleteTool(tool.id))
+      );
+    }
+
+    // Get event documents before deletion
+    const eventDocs = await db
+      .select()
+      .from(eventDocuments)
+      .where(eq(eventDocuments.eventId, id));
+
+    // Delete event documents from Supabase Storage if any exist
+    if (eventDocs.length > 0) {
+      const filePaths = eventDocs.map(doc => doc.filePath);
+      await deleteEventDocuments(filePaths);
+    }
+
+    // Delete event documents from database
+    await db.delete(eventDocuments).where(eq(eventDocuments.eventId, id));
+
+    // Finally delete the event itself
+    const result = await db.delete(events).where(eq(events.id, id));
+
+    // Revalidate paths
+    revalidatePath("/app", "layout");
+
+    return result.count > 0;
+  } catch (error) {
+    console.error('Error deleting event with cleanup:', error);
+    throw error;
+  }
 }
 
 export async function startEvent(id: number) {
@@ -131,4 +161,18 @@ export async function endEvent(id: number) {
     .returning();
 
   revalidatePath("/app", "layout");
+}
+
+export async function saveEventDocument(documentData: UploadedDocument, eventId: number) {
+  try {
+    await db
+      .insert(eventDocuments)
+      .values({ ...documentData, eventId })
+      .returning();
+
+    revalidatePath("/app", "layout");
+  } catch (error) {
+    console.error('Error saving event document:', error);
+    throw error;
+  }
 }

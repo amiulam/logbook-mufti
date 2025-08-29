@@ -65,9 +65,25 @@ export const toolImages = pgTable("tool_images", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// New table for storing event documents (assignment letters)
+export const eventDocuments = pgTable("event_documents", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .references(() => events.id, { onDelete: "cascade" })
+    .notNull(),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  publicUrl: text("public_url").notNull(),
+  fileSize: integer("file_size").notNull(),
+  fileType: text("file_type").notNull(),
+  documentType: text("document_type").notNull().default("assignment_letter"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
-export const eventRelations = relations(events, ({ many }) => ({
+export const eventRelations = relations(events, ({ one, many }) => ({
   tools: many(tools),
+  document: one(eventDocuments),
 }));
 
 export const toolRelations = relations(tools, ({ one, many }) => ({
@@ -82,6 +98,13 @@ export const toolImageRelations = relations(toolImages, ({ one }) => ({
   tool: one(tools, {
     fields: [toolImages.toolId],
     references: [tools.id],
+  }),
+}));
+
+export const eventDocumentRelations = relations(eventDocuments, ({ one }) => ({
+  event: one(events, {
+    fields: [eventDocuments.eventId],
+    references: [events.id],
   }),
 }));
 
@@ -154,15 +177,72 @@ export const toolImageInsertSchema = createInsertSchema(toolImages, {
   imageType: true,
 });
 
-// Schema untuk end event dengan tool conditions
-export const endEventSchema = z.object({
-  toolConditions: z.array(z.object({
-    toolId: z.number(),
-    finalCondition: z.string().min(1, "Kondisi akhir harus diisi"),
-    notes: z.string().optional(),
-    finalImages: z.array(z.any()).min(1, "Minimal 1 foto kondisi akhir harus diupload"),
-  }))
+// Schema untuk event documents
+export const eventDocumentInsertSchema = createInsertSchema(eventDocuments, {
+  fileName: z.string().min(1, {
+    error: "Nama file harus diisi",
+  }),
+  filePath: z.string().min(1, {
+    error: "Path file harus diisi",
+  }),
+  publicUrl: z.string().url({
+    error: "URL file tidak valid",
+  }),
+  fileSize: z.number().positive({
+    error: "Ukuran file harus positif",
+  }),
+  fileType: z.string().min(1, {
+    error: "Tipe file harus diisi",
+  }),
+  documentType: z.string().min(1, {
+    error: "Tipe dokumen harus diisi",
+  }),
+}).pick({
+  fileName: true,
+  filePath: true,
+  publicUrl: true,
+  fileSize: true,
+  fileType: true,
+  documentType: true,
 });
+
+// Schema untuk end event dengan tool conditions
+export const endEventSchema = z
+  .object({
+    toolConditions: z
+      .array(
+        z.object({
+          toolId: z.number(),
+          sameAsInitial: z.boolean().default(false),
+          finalCondition: z.string().optional(),
+          notes: z.string().optional(),
+          finalImages: z.array(z.any()).default([]),
+        })
+      )
+      .min(1, "Minimal 1 tool condition harus diisi"),
+  })
+  .superRefine((data, ctx) => {
+    data.toolConditions.forEach((cond, index) => {
+      if (cond.sameAsInitial) {
+        // when same as initial, ensure optional fields are effectively ignored
+        return;
+      }
+      if (!cond.finalCondition || cond.finalCondition.length < 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Kondisi akhir harus diisi",
+          path: ["toolConditions", index, "finalCondition"],
+        });
+      }
+      if (!cond.finalImages || cond.finalImages.length < 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Minimal 1 foto kondisi akhir harus diupload",
+          path: ["toolConditions", index, "finalImages"],
+        });
+      }
+    });
+  });
 
 // Type untuk end event form data
 export type EndEventFormData = z.infer<typeof endEventSchema>;

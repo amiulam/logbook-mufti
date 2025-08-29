@@ -3,9 +3,10 @@
 import { Tool } from "@/types";
 import { db } from "../lib/db";
 import { toolBaseSchema, tools, toolImages, updateToolConditionsSchema, UpdateToolConditionsData } from "../../drizzle/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { deleteToolImages } from "./storage";
+import { updateToolSchema } from "@/schemas";
 
 // Helper function to map database tool to Tool interface
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,34 +76,28 @@ export async function createTool(toolData: unknown, eventId: number) {
     .returning();
 
   revalidatePath('/app/events', 'page');
-  
+
   return dbTool;
 }
 
 export async function updateTool(
   id: number,
-  updates: Partial<Tool>
+  updates: unknown
 ): Promise<Tool | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateData: any = {
-    updatedAt: new Date(),
-  };
+  const validation = updateToolSchema.safeParse(updates);
+  if (!validation.success) {
+    throw new Error(`Validation failed: ${validation.error.message}`);
+  }
 
-  if (updates.eventId !== undefined) updateData.eventId = updates.eventId;
-  if (updates.name !== undefined) updateData.name = updates.name;
-  if (updates.category !== undefined) updateData.category = updates.category;
-  if (updates.total !== undefined) updateData.total = updates.total;
-  if (updates.initialCondition !== undefined)
-    updateData.initialCondition = updates.initialCondition;
-  if (updates.finalCondition !== undefined)
-    updateData.finalCondition = updates.finalCondition;
-  if (updates.notes !== undefined) updateData.notes = updates.notes;
+  const validatedData = validation.data;
 
   const dbTool = await db
     .update(tools)
-    .set(updateData)
+    .set(validatedData)
     .where(eq(tools.id, id))
     .returning();
+
+  revalidatePath('/app/events', 'page');
 
   return dbTool.length > 0 ? mapDbToolToTool(dbTool[0]) : null;
 }
@@ -111,7 +106,7 @@ export async function deleteTool(id: number): Promise<boolean> {
   try {
     // Get tool images first before deletion
     const toolImages = await getToolImages(id);
-    
+
     // Delete images from Supabase Storage if any exist
     if (toolImages.length > 0) {
       const filePaths = toolImages.map(img => img.filePath);
@@ -120,49 +115,16 @@ export async function deleteTool(id: number): Promise<boolean> {
 
     // Delete tool from database (this will cascade delete tool_images due to foreign key)
     const result = await db.delete(tools).where(eq(tools.id, id));
-    
+
     // Revalidate paths
     revalidatePath('/app/events', 'page');
-    
+
     return result.count > 0;
   } catch (error) {
     console.error('Error deleting tool with cleanup:', error);
     throw error; // Re-throw error untuk handling di UI
   }
 }
-
-// // Function untuk delete multiple tools dengan cleanup
-// export async function deleteMultipleTools(toolIds: number[]): Promise<boolean> {
-//   try {
-//     if (!toolIds || toolIds.length === 0) {
-//       throw new Error("Tool IDs tidak boleh kosong");
-//     }
-
-//     // Get all tool images before deletion
-//     const allToolImages = await Promise.all(
-//       toolIds.map(id => getToolImages(id))
-//     );
-    
-//     // Flatten and collect all file paths
-//     const allFilePaths = allToolImages.flat().map(img => img.filePath);
-    
-//     // Delete all images from Supabase Storage if any exist
-//     if (allFilePaths.length > 0) {
-//       await deleteToolImages(allFilePaths);
-//     }
-
-//     // Delete all tools from database
-//     const result = await db.delete(tools).where(inArray(tools.id, toolIds));
-    
-//     // Revalidate paths
-//     revalidatePath('/app/events', 'page');
-    
-//     return result.count > 0;
-//   } catch (error) {
-//     console.error('Error deleting multiple tools with cleanup:', error);
-//     throw error; // Re-throw error untuk handling di UI
-//   }
-// }
 
 export async function updateToolConditions(
   toolConditions: UpdateToolConditionsData
@@ -238,7 +200,7 @@ export async function getToolImages(toolId: number) {
       .select()
       .from(toolImages)
       .where(eq(toolImages.toolId, toolId));
-    
+
     return images;
   } catch (error) {
     console.error('Error getting tool images:', error);

@@ -1,19 +1,17 @@
-// 'use client';
-
 import { Event, EventWithTools } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Eye, Trash, ToolCase, ImageIcon } from "lucide-react";
+import { Calendar, Eye, ToolCase, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import StartEventButton from "./start-event-button";
 import EndEventButton from "./end-event-button";
+import DeleteEventButton from "./delete-event-button";
+import EditEventDialog from "./edit-event-dialog";
 
 type EventCardProps = {
   event: EventWithTools;
-  // onStart: (eventId: string) => void;
-  // onEnd: (eventId: string) => void;
 };
 
 export default function EventCard({ event }: EventCardProps) {
@@ -57,9 +55,17 @@ export default function EventCard({ event }: EventCardProps) {
             {getStatusText(event.status)}
           </Badge>
         </div>
-        {event.assignmentLetter && (
+        {event.document && (
           <p className="text-sm text-muted-foreground">
-            Assignment: {event.assignmentLetter}
+            Surat Tugas:{" "}
+            <span>
+              <Link
+                href={event.document.publicUrl}
+                className="hover:underline underline-offset-3"
+              >
+                {event.assignmentLetter}
+              </Link>
+            </span>
           </p>
         )}
       </CardHeader>
@@ -67,18 +73,18 @@ export default function EventCard({ event }: EventCardProps) {
         <div className="space-y-3">
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="size-4 mr-2" />
-            Created: {format(new Date(event.createdAt), "MMM dd, yyyy")}
+            Dibuat: {format(new Date(event.createdAt), "MMM dd, yyyy")}
           </div>
 
           {event.startDate && (
             <div className="text-sm text-muted-foreground">
-              Started: {format(new Date(event.startDate), "MMM dd, yyyy HH:mm")}
+              Dimulai: {format(new Date(event.startDate), "MMM dd, yyyy HH:mm")}
             </div>
           )}
 
           {event.endDate && (
             <div className="text-sm text-muted-foreground">
-              Ended: {format(new Date(event.endDate), "MMM dd, yyyy HH:mm")}
+              Berakhir: {format(new Date(event.endDate), "MMM dd, yyyy HH:mm")}
             </div>
           )}
 
@@ -86,12 +92,12 @@ export default function EventCard({ event }: EventCardProps) {
           <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2 border-t">
             <div className="flex items-center gap-1">
               <ToolCase className="size-4" />
-              <span>{event.tools.length} Tools</span>
+              <span>{event.tools.length} Alat</span>
             </div>
             {totalImages > 0 && (
               <div className="flex items-center gap-1">
                 <ImageIcon className="size-4" />
-                <span>{totalImages} Images</span>
+                <span>{totalImages} Gambar</span>
               </div>
             )}
           </div>
@@ -104,24 +110,17 @@ export default function EventCard({ event }: EventCardProps) {
               </Button>
             </Link>
 
+            <EditEventDialog event={event} />
+
             {event.status === "not_started" && (
               <StartEventButton eventId={event.id} />
             )}
 
             {event.status === "in_progress" && (
-             <EndEventButton eventId={event.id} />
+              <EndEventButton eventId={event.id} />
             )}
-
-            {event.tools.length === 0 && event.status === "not_started" && (
-              <Button
-                size="sm"
-                variant="destructive"
-                // onClick={() => onEnd(event.id)}
-              >
-                <Trash className="size-4" />
-                Delete Event
-              </Button>
-            )}
+            
+            <DeleteEventButton eventId={event.id} eventName={event.name} />
           </div>
         </div>
       </CardContent>

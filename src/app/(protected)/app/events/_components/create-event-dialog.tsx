@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { createEvent } from "@/services/events";
+import { saveEventDocument } from "@/services/events";
+import { uploadEventDocument } from "@/services/storage";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,40 +27,94 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import DocumentUpload from "@/components/document-upload";
+
+// Extended schema to include document
+const createEventWithDocumentSchema = eventInsertSchema.extend({
+  document: z.any().refine((file) => file instanceof File, {
+    message: "Document harus diupload",
+  }),
+});
 
 export default function CreateEventModal() {
   const [open, setOpen] = useState(false);
-  const form = useForm<z.infer<typeof eventInsertSchema>>({
-    resolver: zodResolver(eventInsertSchema),
+  const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
+  // const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<z.infer<typeof createEventWithDocumentSchema>>({
+    resolver: zodResolver(createEventWithDocumentSchema),
     defaultValues: {
       name: "",
-      assignmentLetter: "",
+      document: null,
     },
   });
 
   const {
     handleSubmit,
     reset,
-    formState: { isSubmitting, isDirty },
+    setValue,
+    formState: { isSubmitting, isDirty, errors },
   } = form;
 
-  const onSubmit = async (values: z.infer<typeof eventInsertSchema>) => {
+  const onSubmit = async (
+    values: z.infer<typeof createEventWithDocumentSchema>
+  ) => {
+    if (!selectedDocument) {
+      alert("Please select a document");
+      return;
+    }
+
     try {
-      await createEvent({
+      // setIsSubmitting(true);
+
+      // Create event first
+      const newEvent = await createEvent({
         name: values.name.trim(),
-        assignmentLetter: values.assignmentLetter.trim(),
-        status: "not_started",
+        assignmentLetter: selectedDocument.name, // Store filename as assignment letter for backward compatibility
       });
 
+      // Upload document
+      const uploadedDocument = await uploadEventDocument(
+        selectedDocument,
+        newEvent.id,
+        "assignment_letter"
+      );
+
+      // Save document reference to database
+      await saveEventDocument(uploadedDocument, newEvent.id);
+
+      // Reset form and close dialog
       reset();
+      setSelectedDocument(null);
       setOpen(false);
     } catch (error) {
       console.error("Error creating event:", error);
+      alert("Error creating event. Please try again.");
     }
   };
 
+  const handleDocumentChange = (file: File | null) => {
+    if (!file) {
+      return;
+    }
+
+    setSelectedDocument(file);
+
+    setValue("document", file, { shouldValidate: true });
+    setValue("assignmentLetter", file.name);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      // Reset form when closing
+      reset();
+      setSelectedDocument(null);
+    }
+    setOpen(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="size-4" />
@@ -68,7 +124,7 @@ export default function CreateEventModal() {
       <DialogDescription className="sr-only">
         Dialog untuk membuat kegiatan baru
       </DialogDescription>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Buat Kegiatan Baru</DialogTitle>
         </DialogHeader>
@@ -87,60 +143,52 @@ export default function CreateEventModal() {
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
-              name="assignmentLetter"
-              render={({ field }) => (
+              name="document"
+              render={() => (
                 <FormItem>
-                  <FormLabel htmlFor="assignment_letter">Surat Tugas</FormLabel>
+                  <FormLabel>Surat Tugas</FormLabel>
                   <FormControl>
-                    <Input {...field} id="assignment_letter" />
+                    <DocumentUpload
+                      onDocumentChange={handleDocumentChange}
+                      maxSize={10}
+                      required={true}
+                      error={errors.document?.message?.toString()}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting || !isDirty}>
-                Submit
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || !isDirty}
+                className="min-w-[100px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Submit"
+                )}
               </Button>
             </div>
           </form>
         </Form>
-        {/* <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Event Name *</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter event name"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="assignment">Assignment Letter</Label>
-            <Input
-              id="assignment"
-              value={assignmentLetter}
-              onChange={(e) => setAssignmentLetter(e.target.value)}
-              placeholder="Enter assignment letter (optional)"
-            />
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Event"}
-            </Button>
-          </div>
-        </form> */}
       </DialogContent>
     </Dialog>
   );

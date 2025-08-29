@@ -1,21 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { Tool } from "@/types";
+import { Event, Tool } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wrench, Trash2 } from "lucide-react";
+import { Wrench, Trash2, Volume2, Video, Wifi, Settings } from "lucide-react";
 import { getConditionColor } from "@/lib/utils";
 import { deleteTool } from "@/services/tools";
 import DeleteToolDialog from "@/app/(protected)/app/events/_components/delete-tool-dialog";
+import ViewToolDialog from "@/app/(protected)/app/events/_components/view-tool-dialog";
+import EditToolDialog from "@/app/(protected)/app/events/_components/edit-tool-dialog";
 
-interface ToolCardProps {
+type ToolCardProps = {
   tool: Tool;
-  // onDelete: (toolId: string) => void;
-}
+  eventStatus: Event["status"];
+};
 
-export default function ToolCard({ tool }: ToolCardProps) {
+const getCategoryIcon = (category: string) => {
+  switch (category.toLowerCase()) {
+    case "audio":
+      return Volume2;
+    case "video":
+      return Video;
+    case "jaringan":
+    case "network":
+      return Wifi;
+    case "utility":
+      return Wrench;
+    default:
+      return Settings;
+  }
+};
+
+export default function ToolCard({ tool, eventStatus }: ToolCardProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -32,32 +50,35 @@ export default function ToolCard({ tool }: ToolCardProps) {
       setIsDeleting(true);
       await deleteTool(tool.id);
       setIsDeleteDialogOpen(false);
-      // Optionally refresh the page or trigger a callback
-      window.location.reload();
     } catch (error) {
       console.error("Error deleting tool:", error);
-      // You could show a toast notification here
     } finally {
       setIsDeleting(false);
     }
   };
+
+  const CategoryIcon = getCategoryIcon(tool.category);
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-200">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-semibold flex items-center">
-            <Wrench className="w-5 h-5 mr-2 text-muted-foreground" />
+            <CategoryIcon className="w-5 h-5 mr-2 text-muted-foreground" />
             {tool.name}
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteClick}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {eventStatus != "completed" && <EditToolDialog tool={tool} />}
+            <ViewToolDialog tool={tool} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDeleteClick}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -98,7 +119,7 @@ export default function ToolCard({ tool }: ToolCardProps) {
           )}
         </div>
       </CardContent>
-      
+
       <DeleteToolDialog
         isOpen={isDeleteDialogOpen}
         onClose={handleCloseDialog}

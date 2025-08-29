@@ -37,16 +37,16 @@ import { endEvent } from "@/services/events";
 import { useEventStore } from "@/stores/eventStores";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { endEventSchema, EndEventFormData } from "@/../drizzle/schema";
-import ImageUpload from "@/components/ImageUpload";
+import { endEventSchema } from "@/../drizzle/schema";
+import ImageUpload from "@/components/image-upload";
 import { Loader2 } from "lucide-react";
 import { TOOL_CONDITIONS } from "@/lib/constant";
 import { getConditionColor } from "@/lib/utils";
 import { ToolWithImages } from "@/types";
+import Checkbox from "@/components/ui/checkbox";
+import z from "zod";
 
-// type EndEventModalProps = {
-//   tools: Tool[];
-// };
+type EndEventFormValues = z.input<typeof endEventSchema>;
 
 export default function EndEventModal() {
   const [loading, setLoading] = useState(false);
@@ -61,16 +61,19 @@ export default function EndEventModal() {
     (state) => state.setEndModalDialogOpen
   );
 
-  const form = useForm<EndEventFormData>({
+  const form = useForm<EndEventFormValues>({
     resolver: zodResolver(endEventSchema),
     defaultValues: {
       toolConditions: tools.map((tool) => ({
         toolId: tool.id,
+        sameAsInitial: false,
         finalCondition: "",
         notes: "",
         finalImages: [],
       })),
     },
+    mode: "onSubmit",
+    reValidateMode: "onChange",
   });
 
   // Fetch tools when modal opens
@@ -85,6 +88,7 @@ export default function EndEventModal() {
           form.reset({
             toolConditions: toolsData.map((tool: ToolWithImages) => ({
               toolId: tool.id,
+              sameAsInitial: false,
               finalCondition: "",
               notes: "",
               finalImages: [],
@@ -97,6 +101,7 @@ export default function EndEventModal() {
     };
 
     fetchTools();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endEventModal]);
 
   const handleImagesChange = (toolId: number, images: File[]) => {
@@ -117,7 +122,58 @@ export default function EndEventModal() {
     });
   };
 
-  const handleSubmit = async (values: EndEventFormData) => {
+  const handleSameAsInitialChange = (
+    toolId: number,
+    checked: boolean,
+    initialCondition: string
+  ) => {
+    const currentConditions = form.getValues("toolConditions");
+    const toolIndex = tools.findIndex((t) => t.id === toolId);
+
+    const updatedConditions = currentConditions.map((condition) =>
+      condition.toolId === toolId
+        ? {
+            ...condition,
+            sameAsInitial: checked,
+            finalCondition: checked
+              ? initialCondition
+              : condition.finalCondition,
+            notes: checked ? "" : condition.notes,
+            finalImages: checked ? [] : condition.finalImages,
+          }
+        : condition
+    );
+
+    // Update form values without immediate validation
+    form.setValue("toolConditions", updatedConditions, {
+      shouldValidate: false,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+
+    // Clear ALL errors for this tool when checked
+    if (checked) {
+      form.clearErrors([
+        `toolConditions.${toolIndex}.finalCondition`,
+        `toolConditions.${toolIndex}.finalImages`,
+        `toolConditions.${toolIndex}.notes`,
+      ]);
+
+      // Also clear selectedImages for this tool
+      setSelectedImages((prev) => {
+        const newState = { ...prev };
+        delete newState[toolId];
+        return newState;
+      });
+
+      // Force clear the finalImages field value in form
+      form.setValue(`toolConditions.${toolIndex}.finalImages`, [], {
+        shouldValidate: false,
+      });
+    }
+  };
+
+  const handleSubmit = async (values: EndEventFormValues) => {
     if (!endEventModal.eventId) {
       return;
     }
@@ -131,14 +187,17 @@ export default function EndEventModal() {
       // Update tool conditions first
       const updates = values.toolConditions.map((condition) => ({
         toolId: condition.toolId,
-        finalCondition: condition.finalCondition,
-        notes: condition.notes,
+        finalCondition: condition.sameAsInitial
+          ? tools.find((t) => t.id === condition.toolId)?.initialCondition || ""
+          : condition.finalCondition || "",
+        notes: condition.sameAsInitial ? "" : condition.notes,
       }));
 
       await updateToolConditions(updates);
 
-      // Upload final condition images for each tool
+      // Upload final condition images for each tool (only when not sameAsInitial)
       for (const condition of values.toolConditions) {
+        if (condition.sameAsInitial) continue;
         const images = selectedImages[condition.toolId] || [];
         if (images.length > 0) {
           const uploadedImages = await uploadToolImages(
@@ -208,110 +267,128 @@ export default function EndEventModal() {
                     </Badge>
                   </div>
 
-                  {/* Initial Images Display */}
-                  {tool.images && tool.images.length > 0 && (
-                    <div className="space-y-2">
-                      <FormLabel className="text-sm font-medium">
-                        Foto Kondisi Awal:
-                      </FormLabel>
-                      <div className="grid grid-cols-3 gap-2">
-                        {tool.images
-                          .filter((img) => img.imageType === "initial")
-                          .map((image) => (
-                            <div key={image.id} className="relative">
-                              <img
-                                src={image.publicUrl}
-                                alt={image.fileName}
-                                className="w-full h-40 object-cover rounded border"
-                              />
-                              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 rounded-b">
-                                {image.fileName}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Same as initial checkbox */}
+                  <FormField
+                    control={form.control}
+                    name={`toolConditions.${index}.sameAsInitial`}
+                    render={({ field }) => (
+                      <FormItem className="flex items-start gap-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onChange={(e) => {
+                              field.onChange(e.target.checked);
+                              handleSameAsInitialChange(
+                                tool.id,
+                                e.target.checked,
+                                tool.initialCondition
+                              );
+                            }}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="m-0">
+                            Sama dengan kondisi awal
+                          </FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
 
                   {/* Final Condition Form */}
-                  <FormField
-                    control={form.control}
-                    name={`toolConditions.${index}.finalCondition`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          Kondisi Akhir
-                        </FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih kondisi akhir" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {TOOL_CONDITIONS.map((condition) => (
-                              <SelectItem
-                                key={condition.value}
-                                value={condition.value}
-                              >
-                                {condition.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {!form.watch(`toolConditions.${index}.sameAsInitial`) && (
+                    <FormField
+                      control={form.control}
+                      name={`toolConditions.${index}.finalCondition`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            Kondisi Akhir
+                          </FormLabel>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Pilih kondisi akhir" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {TOOL_CONDITIONS.map((condition) => (
+                                <SelectItem
+                                  key={condition.value}
+                                  value={condition.value}
+                                >
+                                  {condition.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {/* Only show error when not sameAsInitial */}
+                          {!!form.formState.errors.toolConditions?.[index]
+                            ?.finalCondition && <FormMessage />}
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   {/* Notes Form */}
-                  <FormField
-                    control={form.control}
-                    name={`toolConditions.${index}.notes`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Catatan (Opsional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Add any notes about the tool condition..."
-                            rows={2}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {!form.watch(`toolConditions.${index}.sameAsInitial`) && (
+                    <FormField
+                      control={form.control}
+                      name={`toolConditions.${index}.notes`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Catatan (Opsional)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder="Tambahkan catatan kondisi alat..."
+                              rows={2}
+                            />
+                          </FormControl>
+                          {!!form.formState.errors.toolConditions?.[index]
+                            ?.notes && <FormMessage />}
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   {/* Final Images Upload */}
-                  <FormField
-                    control={form.control}
-                    name={`toolConditions.${index}.finalImages`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          Foto Kondisi Akhir
-                        </FormLabel>
-                        <FormControl>
-                          <ImageUpload
-                            onImagesChange={(images) =>
-                              handleImagesChange(tool.id, images)
-                            }
-                            maxImages={5}
-                            required={true}
-                            error={
-                              form.formState.errors.toolConditions?.[index]
-                                ?.finalImages?.message
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {!form.watch(`toolConditions.${index}.sameAsInitial`) && (
+                    <FormField
+                      control={form.control}
+                      name={`toolConditions.${index}.finalImages`}
+                      render={() => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            Foto Kondisi Akhir
+                          </FormLabel>
+                          <FormControl>
+                            <ImageUpload
+                              onImagesChange={(images) =>
+                                handleImagesChange(tool.id, images)
+                              }
+                              maxImages={5}
+                              required={form.formState.submitCount > 0}
+                              error={
+                                form.formState.submitCount > 0
+                                  ? (form.formState.errors.toolConditions?.[
+                                      index
+                                    ]?.finalImages
+                                      ?.message as unknown as string)
+                                  : undefined
+                              }
+                            />
+                          </FormControl>
+                          {form.formState.submitCount > 0 &&
+                            !!form.formState.errors.toolConditions?.[index]
+                              ?.finalImages && <FormMessage />}
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </Card>
               ))}
 
@@ -328,7 +405,6 @@ export default function EndEventModal() {
                   type="submit"
                   disabled={loading || isUploading || !form.formState.isValid}
                   variant="destructive"
-                  // className="min-w-[120px]"
                 >
                   {loading || isUploading ? (
                     <>

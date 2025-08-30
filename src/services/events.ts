@@ -48,11 +48,37 @@ export async function createEvent(eventData: unknown): Promise<Event> {
 
   const validatedData = validationResult.data;
 
+  // Generate unique public ID with collision handling
+  const generateUniquePublicId = async (): Promise<number> => {
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (attempts < maxAttempts) {
+      const publicId = Math.floor(Math.random() * 90000000) + 10000000;
+
+      // Check if this publicId already exists
+      const existingEvent = await db
+        .select({ id: events.id })
+        .from(events)
+        .where(eq(events.publicId, publicId))
+        .limit(1);
+
+      if (existingEvent.length === 0) {
+        return publicId;
+      }
+
+      attempts++;
+    }
+
+    throw new Error('Failed to generate unique public ID after multiple attempts');
+  };
+
   const [dbEvent] = await db
     .insert(events)
     .values({
       name: validatedData.name,
       assignmentLetter: validatedData.assignmentLetter,
+      publicId: await generateUniquePublicId(),
     })
     .returning();
 

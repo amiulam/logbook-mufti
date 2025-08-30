@@ -25,7 +25,7 @@ export const toolImageTypeEnum = pgEnum("image_type", [
 // Table Schemas
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
-  publicId: integer('public_id').notNull().default(Math.floor(Math.random() * 90000000) + 10000000),
+  publicId: integer('public_id').notNull().unique(),
   name: text("name").notNull(),
   assignmentLetter: text("assignment_letter").notNull(),
   status: eventStatusEnum("status").notNull().default("not_started"),

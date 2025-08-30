@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Event, Tool } from "@/types";
+import { Event, Tool, ToolCategories } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,14 +17,13 @@ type ToolCardProps = {
   eventStatus: Event["status"];
 };
 
-const getCategoryIcon = (category: string) => {
-  switch (category.toLowerCase()) {
+const getCategoryIcon = (category: ToolCategories) => {
+  switch (category) {
     case "audio":
       return Volume2;
     case "video":
       return Video;
     case "jaringan":
-    case "network":
       return Wifi;
     case "utility":
       return Wrench;
@@ -57,7 +56,7 @@ export default function ToolCard({ tool, eventStatus }: ToolCardProps) {
     }
   };
 
-  const CategoryIcon = getCategoryIcon(tool.category);
+  const CategoryIcon = getCategoryIcon(tool.category as ToolCategories);
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-200">

@@ -1,0 +1,58 @@
+"use server";
+
+import { auth } from "@/lib/auth";
+import { signInSchema, signUpSchema } from "@/schemas";
+import { redirect } from "next/navigation";
+import { APIError } from "better-auth/api";
+
+export const signInWithEmail = async (data: unknown) => {
+  const validationResult = signInSchema.safeParse(data);
+
+  if (!validationResult.success) {
+    throw new Error(`Validation failed: ${validationResult.error.message}`);
+  }
+
+  const validatedData = validationResult.data;
+  const { email, password } = validatedData;
+
+  try {
+    await auth.api.signInEmail({
+      body: { email, password },
+    });
+
+    redirect("/app/events");
+  } catch (error) {
+    if (error instanceof APIError) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+};
+
+export const signUpWithEmail = async (data: unknown) => {
+  const validationResult = signUpSchema.safeParse(data);
+
+  if (!validationResult.success) {
+    throw new Error(`Validation failed: ${validationResult.error.message}`);
+  }
+
+  const validatedData = validationResult.data;
+  const { name, email, password } = validatedData;
+
+  try {
+    await auth.api.signUpEmail({
+      body: { name, email, password },
+    });
+
+    redirect("/signin");
+  } catch (error) {
+    if (error instanceof APIError) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+};

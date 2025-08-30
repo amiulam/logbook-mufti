@@ -3,21 +3,33 @@
 import { Event } from "@/types";
 import { db } from "../lib/db";
 import { eventInsertSchema, events, eventDocuments } from "@/../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { deleteEventDocuments, UploadedDocument } from "./storage";
 import { deleteTool, getToolsByEventId } from "./tools";
 import { updateEventSchema } from "@/schemas";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 export async function getAllEvents() {
   noStore();
 
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    redirect("/signin");
+  }
+
   const eventList = await db.query.events.findMany({
+    where: eq(events.userId, session?.user.id),
     with: {
       tools: {
         with: {
           images: true,
-        }
+        },
       },
       document: true,
     },
@@ -28,8 +40,19 @@ export async function getAllEvents() {
 export async function getEventById(publicId: string) {
   noStore();
 
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    redirect("/signin");
+  }
+
   const foundEvent = await db.query.events.findFirst({
-    where: eq(events.publicId, +publicId),
+    where: and(
+      eq(events.publicId, +publicId),
+      eq(events.userId, session?.user.id),
+    ),
     with: {
       tools: true,
       document: true,
@@ -74,8 +97,17 @@ export async function createEvent(eventData: unknown): Promise<Event> {
       attempts++;
     }
 
-    throw new Error('Failed to generate unique public ID after multiple attempts');
+    throw new Error(
+      "Failed to generate unique public ID after multiple attempts",
+    );
   };
+
+  // attach current user id
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const userId = session?.user?.id || null;
 
   const [dbEvent] = await db
     .insert(events)
@@ -83,17 +115,18 @@ export async function createEvent(eventData: unknown): Promise<Event> {
       name: validatedData.name,
       assignmentLetter: validatedData.assignmentLetter,
       publicId: await generateUniquePublicId(),
+      userId: userId!,
     })
     .returning();
 
-  revalidatePath("/app/events", "page")
+  revalidatePath("/app/events", "page");
 
   return dbEvent;
 }
 
 export async function updateEvent(
   id: number,
-  updates: unknown
+  updates: unknown,
 ): Promise<Event | null> {
   const validation = updateEventSchema.safeParse(updates);
   if (!validation.success) {
@@ -120,9 +153,7 @@ export async function deleteEvent(id: number): Promise<boolean> {
 
     // Delete all tools (this will cascade delete tool images due to foreign key)
     if (eventTools.length > 0) {
-      await Promise.all(
-        eventTools.map(tool => deleteTool(tool.id))
-      );
+      await Promise.all(eventTools.map((tool) => deleteTool(tool.id)));
     }
 
     // Get event documents before deletion
@@ -133,7 +164,7 @@ export async function deleteEvent(id: number): Promise<boolean> {
 
     // Delete event documents from Supabase Storage if any exist
     if (eventDocs.length > 0) {
-      const filePaths = eventDocs.map(doc => doc.filePath);
+      const filePaths = eventDocs.map((doc) => doc.filePath);
       await deleteEventDocuments(filePaths);
     }
 
@@ -148,7 +179,7 @@ export async function deleteEvent(id: number): Promise<boolean> {
 
     return result.count > 0;
   } catch (error) {
-    console.error('Error deleting event with cleanup:', error);
+    console.error("Error deleting event with cleanup:", error);
     throw error;
   }
 }
@@ -179,7 +210,10 @@ export async function endEvent(id: number) {
   revalidatePath("/app/events", "page");
 }
 
-export async function saveEventDocument(documentData: UploadedDocument, eventId: number) {
+export async function saveEventDocument(
+  documentData: UploadedDocument,
+  eventId: number,
+) {
   try {
     await db
       .insert(eventDocuments)
@@ -188,7 +222,7 @@ export async function saveEventDocument(documentData: UploadedDocument, eventId:
 
     revalidatePath("/app/events", "page");
   } catch (error) {
-    console.error('Error saving event document:', error);
+    console.error("Error saving event document:", error);
     throw error;
   }
 }

@@ -7,19 +7,17 @@ export default async function Home() {
   const events = await getAllEvents();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
+    <div>
+      <div className="container mx-auto px-4 py-8 md:max-w-7xl">
+        <div className="mb-8 flex items-center justify-between">
+          <>
             <h1 className="text-3xl font-bold text-gray-900">Event Logbook</h1>
-            <p className="text-gray-600 mt-2">
-              Manage your events and track tool conditions
-            </p>
-          </div>
+            <p className="mt-2 text-gray-600">Kelola acara dan kondisi alat</p>
+          </>
           <CreateEventModal />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {events.length < 1 ? (
             <div>No data yet</div>
           ) : (

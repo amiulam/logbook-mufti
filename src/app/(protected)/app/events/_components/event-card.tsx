@@ -47,21 +47,21 @@ export default function EventCard({ event }: EventCardProps) {
   }, 0);
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
+    <Card className="transition-shadow duration-200 hover:shadow-md">
       <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
+        <div className="flex items-start justify-between">
           <CardTitle className="text-lg font-semibold">{event.name}</CardTitle>
           <Badge className={getStatusColor(event.status)}>
             {getStatusText(event.status)}
           </Badge>
         </div>
         {event.document && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Surat Tugas:{" "}
             <span>
               <Link
                 href={event.document.publicUrl}
-                className="hover:underline underline-offset-3"
+                className="underline-offset-3 hover:underline"
               >
                 {event.assignmentLetter}
               </Link>
@@ -71,25 +71,25 @@ export default function EventCard({ event }: EventCardProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Calendar className="size-4 mr-2" />
+          <div className="text-muted-foreground flex items-center text-sm">
+            <Calendar className="mr-2 size-4" />
             Dibuat: {format(new Date(event.createdAt), "MMM dd, yyyy")}
           </div>
 
           {event.startDate && (
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Dimulai: {format(new Date(event.startDate), "MMM dd, yyyy HH:mm")}
             </div>
           )}
 
           {event.endDate && (
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Berakhir: {format(new Date(event.endDate), "MMM dd, yyyy HH:mm")}
             </div>
           )}
 
           {/* Tools and Images Summary */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2 border-t">
+          <div className="text-muted-foreground flex items-center gap-4 border-t pt-2 text-sm">
             <div className="flex items-center gap-1">
               <ToolCase className="size-4" />
               <span>{event.tools.length} Alat</span>
@@ -102,7 +102,7 @@ export default function EventCard({ event }: EventCardProps) {
             )}
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Link href={`/app/events/${event.publicId}`}>
               <Button variant="outline" size="sm">
                 <Eye className="size-4" />
@@ -119,7 +119,7 @@ export default function EventCard({ event }: EventCardProps) {
             {event.status === "in_progress" && (
               <EndEventButton eventId={event.id} />
             )}
-            
+
             <DeleteEventButton eventId={event.id} eventName={event.name} />
           </div>
         </div>

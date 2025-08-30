@@ -1,3 +1,5 @@
+import { LucideIcon } from "lucide-react";
+
 export type Event = {
   id: number;
   publicId: number;
@@ -56,6 +58,13 @@ export type EventWithTools = Event & {
   tools: ToolWithImages[];
   document: EventDocument | null;
 };
+
+export interface NavItem {
+  title: string;
+  href: string;
+  icon?: LucideIcon | null;
+  isActive?: boolean;
+}
 
 export type ToolCondition = "good" | "damaged" | "missing";
 export type ToolCategories = "audio" | "video" | "jaringan" | "utility";

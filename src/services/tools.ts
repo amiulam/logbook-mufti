@@ -4,7 +4,7 @@ import { Tool } from "@/types";
 import { db } from "../lib/db";
 import { toolBaseSchema, tools, toolImages, updateToolConditionsSchema, UpdateToolConditionsData } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { deleteToolImages } from "./storage";
 import { updateToolSchema } from "@/schemas";
 
@@ -27,6 +27,8 @@ function mapDbToolToTool(dbTool: any): Tool {
 }
 
 export async function getToolsByEventId(eventId: number) {
+  noStore();
+
   const toolsData = await db.query.tools.findMany({
     where: eq(tools.eventId, eventId),
     with: {
@@ -35,10 +37,11 @@ export async function getToolsByEventId(eventId: number) {
   });
 
   return toolsData;
-  // return dbTools.map(mapDbToolToTool);
 }
 
 export async function getToolById(id: string): Promise<Tool | null> {
+  noStore();
+
   const dbTool = await db
     .select()
     .from(tools)
@@ -195,6 +198,8 @@ export async function saveToolImages(
 
 // Function to get tool images
 export async function getToolImages(toolId: number) {
+  noStore();
+
   try {
     const images = await db
       .select()

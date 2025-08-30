@@ -4,12 +4,14 @@ import { Event } from "@/types";
 import { db } from "../lib/db";
 import { eventInsertSchema, events, eventDocuments } from "@/../drizzle/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { deleteEventDocuments, UploadedDocument } from "./storage";
 import { deleteTool, getToolsByEventId } from "./tools";
 import { updateEventSchema } from "@/schemas";
 
 export async function getAllEvents() {
+  noStore();
+
   const eventList = await db.query.events.findMany({
     with: {
       tools: {
@@ -24,6 +26,8 @@ export async function getAllEvents() {
 }
 
 export async function getEventById(publicId: string) {
+  noStore();
+
   const foundEvent = await db.query.events.findFirst({
     where: eq(events.publicId, +publicId),
     with: {
@@ -82,7 +86,7 @@ export async function createEvent(eventData: unknown): Promise<Event> {
     })
     .returning();
 
-  revalidatePath("/app", "layout");
+  revalidatePath("/app/events", "page")
 
   return dbEvent;
 }
@@ -96,25 +100,11 @@ export async function updateEvent(
     throw new Error(`Validation failed: ${validation.error.message}`);
   }
 
-  const validated = validation.data;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateData: any = {
-    updatedAt: new Date(),
-  };
-
-  if (validated.name !== undefined) updateData.name = validated.name;
-  if (validated.assignmentLetter !== undefined)
-    updateData.assignmentLetter = validated.assignmentLetter;
-  if (validated.status !== undefined) updateData.status = validated.status;
-  if (validated.startDate !== undefined)
-    updateData.startDate = validated.startDate ? new Date(validated.startDate) : null;
-  if (validated.endDate !== undefined)
-    updateData.endDate = validated.endDate ? new Date(validated.endDate) : null;
+  const validatedData = validation.data;
 
   const dbEvent = await db
     .update(events)
-    .set(updateData)
+    .set(validatedData)
     .where(eq(events.id, id))
     .returning();
 
@@ -154,7 +144,7 @@ export async function deleteEvent(id: number): Promise<boolean> {
     const result = await db.delete(events).where(eq(events.id, id));
 
     // Revalidate paths
-    revalidatePath("/app", "layout");
+    revalidatePath("/app/events", "page");
 
     return result.count > 0;
   } catch (error) {
@@ -173,7 +163,7 @@ export async function startEvent(id: number) {
     .where(eq(events.id, id))
     .returning();
 
-  revalidatePath("/app", "layout");
+  revalidatePath("/app/events", "page");
 }
 
 export async function endEvent(id: number) {
@@ -186,7 +176,7 @@ export async function endEvent(id: number) {
     .where(eq(events.id, id))
     .returning();
 
-  revalidatePath("/app", "layout");
+  revalidatePath("/app/events", "page");
 }
 
 export async function saveEventDocument(documentData: UploadedDocument, eventId: number) {
@@ -196,7 +186,7 @@ export async function saveEventDocument(documentData: UploadedDocument, eventId:
       .values({ ...documentData, eventId })
       .returning();
 
-    revalidatePath("/app", "layout");
+    revalidatePath("/app/events", "page");
   } catch (error) {
     console.error('Error saving event document:', error);
     throw error;

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ACCEPTED_IMAGE_TYPES } from "@/lib/constant";
 import Image from "next/image";
 
 type ImageFile = {
@@ -43,17 +44,40 @@ export default function ImageUpload({
   const addImages = useCallback(
     (files: FileList | File[]) => {
       const newImages: ImageFile[] = [];
+      const rejectedFiles: string[] = [];
 
       Array.from(files).forEach((file) => {
-        if (
-          file.type.startsWith("image/") &&
-          images.length + newImages.length < maxImages
-        ) {
+        // Validate file type - only allow specific image formats
+        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+          rejectedFiles.push(file.name);
+          return;
+        }
+
+        // Validate file size (5MB max)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (file.size > maxSize) {
+          rejectedFiles.push(`${file.name} (too large)`);
+          return;
+        }
+
+        // Check if we can add more images
+        if (images.length + newImages.length < maxImages) {
           const id = Math.random().toString(36).substr(2, 9);
           const preview = URL.createObjectURL(file);
           newImages.push({ file, id, preview });
+        } else {
+          rejectedFiles.push(`${file.name} (max images reached)`);
         }
       });
+
+      // Show alert for rejected files
+      if (rejectedFiles.length > 0) {
+        alert(
+          `Some files were rejected:\n${rejectedFiles.join(
+            "\n"
+          )}\n\nOnly image files (JPG, PNG, GIF, WebP, BMP, SVG) up to 5MB are allowed.`
+        );
+      }
 
       if (newImages.length > 0) {
         handleImagesChange([...images, ...newImages]);
@@ -146,7 +170,7 @@ export default function ImageUpload({
             drop
           </div>
           <div className="text-xs text-muted-foreground">
-            PNG, JPG, GIF up to 5MB each
+            JPG, PNG, GIF, WebP, BMP, SVG up to 5MB each
           </div>
           <div className="text-xs text-muted-foreground">
             Max {maxImages} images

@@ -18,7 +18,7 @@ import { uploadEventDocument } from "@/services/storage";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { eventInsertSchema } from "@/../drizzle/schema";
+import { createEventWithDocumentSchema } from "@/../drizzle/schema";
 import {
   Form,
   FormControl,
@@ -29,23 +29,18 @@ import {
 } from "@/components/ui/form";
 import DocumentUpload from "@/components/document-upload";
 
-// Extended schema to include document
-const createEventWithDocumentSchema = eventInsertSchema.extend({
-  document: z.any().refine((file) => file instanceof File, {
-    message: "Document harus diupload",
-  }),
-});
-
 export default function CreateEventModal() {
   const [open, setOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<File | undefined>(
+    undefined
+  );
   // const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof createEventWithDocumentSchema>>({
     resolver: zodResolver(createEventWithDocumentSchema),
     defaultValues: {
       name: "",
-      document: null,
+      document: undefined,
     },
   });
 
@@ -65,8 +60,6 @@ export default function CreateEventModal() {
     }
 
     try {
-      // setIsSubmitting(true);
-
       // Create event first
       const newEvent = await createEvent({
         name: values.name.trim(),
@@ -85,7 +78,7 @@ export default function CreateEventModal() {
 
       // Reset form and close dialog
       reset();
-      setSelectedDocument(null);
+      setSelectedDocument(undefined);
       setOpen(false);
     } catch (error) {
       console.error("Error creating event:", error);
@@ -108,7 +101,7 @@ export default function CreateEventModal() {
     if (!newOpen) {
       // Reset form when closing
       reset();
-      setSelectedDocument(null);
+      setSelectedDocument(undefined);
     }
     setOpen(newOpen);
   };
@@ -153,7 +146,7 @@ export default function CreateEventModal() {
                   <FormControl>
                     <DocumentUpload
                       onDocumentChange={handleDocumentChange}
-                      maxSize={10}
+                      maxSize={5}
                       required={true}
                       error={errors.document?.message?.toString()}
                     />

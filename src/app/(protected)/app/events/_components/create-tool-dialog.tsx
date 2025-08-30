@@ -31,7 +31,7 @@ import { createTool, saveToolImages } from "@/services/tools";
 import { uploadToolImages } from "@/services/storage";
 import { useForm } from "react-hook-form";
 import z from "zod";
-import { toolBaseSchema } from "@/../drizzle/schema";
+import { addToolSchema } from "@/../drizzle/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { TOOL_CATEGORIES, TOOL_CONDITIONS } from "@/lib/constant";
 import ImageUpload from "@/components/image-upload";
@@ -39,13 +39,6 @@ import ImageUpload from "@/components/image-upload";
 type AddToolModalProps = {
   eventId: number;
 };
-
-// Create schema with images validation
-const addToolSchema = toolBaseSchema.extend({
-  images: z.array(z.any()).min(1, {
-    error: "Minimal 1 foto kondisi awal harus diupload",
-  }),
-});
 
 export default function CreateToolDialog({ eventId }: AddToolModalProps) {
   const [open, setOpen] = useState(false);

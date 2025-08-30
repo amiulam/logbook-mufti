@@ -3,8 +3,9 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, X, FileText, FileImage, File } from "lucide-react";
+import { Upload, X, FileText, File } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ACCEPTED_DOC_TYPES } from "@/lib/constant";
 
 type DocumentUploadProps = {
   onDocumentChange: (file: File | null) => void;
@@ -13,19 +14,11 @@ type DocumentUploadProps = {
   required?: boolean;
   error?: string;
   className?: string;
-}
+};
 
 export default function DocumentUpload({
   onDocumentChange,
-  maxSize = 10,
-  acceptedTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/plain',
-    'image/jpeg',
-    'image/png'
-  ],
+  maxSize = 5,
   error,
 }: DocumentUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -34,8 +27,10 @@ export default function DocumentUpload({
 
   const handleFileSelect = (file: File) => {
     // Validate file type
-    if (!acceptedTypes.includes(file.type)) {
-      alert(`File type not allowed. Allowed types: PDF, DOC, DOCX, TXT, JPG, PNG`);
+    if (!ACCEPTED_DOC_TYPES.includes(file.type)) {
+      alert(
+        `File type not allowed. Allowed types: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, ODT, ODS, ODP, RTF, ZIP`
+      );
       return;
     }
 
@@ -86,18 +81,25 @@ export default function DocumentUpload({
   };
 
   const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf')) return <FileText className="size-4" />;
-    if (fileType.includes('word') || fileType.includes('document')) return <FileText className="size-4" />;
-    if (fileType.includes('image')) return <FileImage className="size-4" />;
-    return <File className="size-4" />;
+    if (fileType.includes("pdf")) return <FileText className="size-4" />;
+    if (fileType.includes("word") || fileType.includes("document"))
+      return <FileText className="size-4" />;
+    if (fileType.includes("excel") || fileType.includes("spreadsheet"))
+      return <FileText className="size-4" />;
+    if (fileType.includes("powerpoint") || fileType.includes("presentation"))
+      return <FileText className="size-4" />;
+    if (fileType.includes("text") || fileType.includes("csv"))
+      return <FileText className="size-4" />;
+    if (fileType.includes("zip")) return <File className="size-4" />;
+    return <FileText className="size-4" />;
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   return (
@@ -130,7 +132,8 @@ export default function DocumentUpload({
                 </button>
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Supported formats: PDF, DOC, DOCX, TXT, JPG, PNG (Max {maxSize}MB)
+                Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT,
+                CSV, ODT, ODS, ODP, RTF, ZIP (Max {maxSize}MB)
               </p>
             </div>
           </div>
@@ -164,7 +167,7 @@ export default function DocumentUpload({
         ref={fileInputRef}
         id="document-upload"
         type="file"
-        accept={acceptedTypes.join(',')}
+        accept={ACCEPTED_DOC_TYPES.join(",")}
         onChange={handleFileInputChange}
         className="hidden"
       />

@@ -1,3 +1,4 @@
+import { ACCEPTED_DOC_TYPES, ACCEPTED_IMAGE_TYPES } from "@/lib/constant";
 import { relations } from "drizzle-orm";
 import {
   pgTable,
@@ -256,3 +257,52 @@ export const updateToolConditionsSchema = z.array(z.object({
 
 // Type untuk update tool conditions
 export type UpdateToolConditionsData = z.infer<typeof updateToolConditionsSchema>;
+
+
+// Extended schema to include document with file type validation
+export const createEventWithDocumentSchema = eventInsertSchema.extend({
+  document: z
+    .instanceof(File)
+    .refine((file) => file instanceof File, {
+      message: "Document harus diupload",
+    })
+    .refine(
+      (file) => {
+        if (!file) return false;
+
+        return ACCEPTED_DOC_TYPES.includes(file.type);
+      },
+      {
+        message: "File harus berupa dokumen", // (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, ODT, ODS, ODP, RTF, ZIP)
+      }
+    )
+    .refine(
+      (file) => {
+        if (!file) return false;
+
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        return file.size <= maxSize;
+      },
+      {
+        message: "Ukuran file maksimal 5MB",
+      }
+    ),
+});
+
+// Create schema with images validation
+export const addToolSchema = toolBaseSchema.extend({
+  images: z.array(z.instanceof(File)).min(1, {
+    error: "Minimal 1 foto kondisi awal harus diupload",
+  }).refine((files) => {
+    // Validate that all files are images
+    return files.every((file) => ACCEPTED_IMAGE_TYPES.includes(file.type));
+  }, {
+    message: "Semua file harus berupa gambar (JPG, PNG, GIF, WebP, BMP, SVG)",
+  }).refine((files) => {
+    // Validate file size (5MB max each)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    return files.every((file) => file.size <= maxSize);
+  }, {
+    message: "Ukuran file maksimal 5MB per gambar",
+  }),
+});

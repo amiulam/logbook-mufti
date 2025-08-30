@@ -1,21 +1,14 @@
 "use client";
 
 import {
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { UserInfo } from "@/components/user-info";
-import { useMobileNavigation } from "@/hooks/use-mobile-navigation";
 import { Session } from "@/lib/auth";
 import { authClient } from "@/lib/auth-client";
-// import { logout } from "@/routes";
-// import { edit } from "@/routes/profile";
-// import { type User } from "@/types";
-// import { Link, router } from "@inertiajs/react";
-import { LogOut, Settings } from "lucide-react";
-import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type UserMenuContentProps = {
@@ -23,13 +16,7 @@ type UserMenuContentProps = {
 };
 
 export function UserMenuContent({ user }: UserMenuContentProps) {
-  const cleanup = useMobileNavigation();
   const router = useRouter();
-
-  // const handleLogout = () => {
-  //   cleanup();
-  //   router.flushAll();
-  // };
 
   return (
     <>
@@ -39,7 +26,7 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuGroup>
+      {/* <DropdownMenuGroup>
         <DropdownMenuItem asChild>
           <Link
             className="block w-full"
@@ -53,7 +40,7 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
           </Link>
         </DropdownMenuItem>
       </DropdownMenuGroup>
-      <DropdownMenuSeparator />
+      <DropdownMenuSeparator /> */}
       <DropdownMenuItem asChild>
         <div
           className="block w-full"
@@ -61,7 +48,7 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
             await authClient.signOut({
               fetchOptions: {
                 onSuccess: () => {
-                  router.push("/signin"); // redirect to login page
+                  router.replace("/signin"); // redirect to login page
                 },
               },
             });

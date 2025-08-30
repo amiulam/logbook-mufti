@@ -20,25 +20,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { UserMenuContent } from "@/components/user-menu-content";
 import { authClient } from "@/lib/auth-client";
 import { cn, getInitials } from "@/lib/utils";
 import { NavItem } from "@/types";
-import {
-  BookOpen,
-  CalendarIcon,
-  FilesIcon,
-  Folder,
-  LayoutGridIcon,
-  Menu,
-  Search,
-} from "lucide-react";
+import { CalendarIcon, FilesIcon, LayoutGridIcon, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -60,18 +46,18 @@ const mainNavItems: NavItem[] = [
   },
 ];
 
-const rightNavItems: NavItem[] = [
-  {
-    title: "Repository",
-    href: "https://github.com/laravel/react-starter-kit",
-    icon: Folder,
-  },
-  {
-    title: "Documentation",
-    href: "https://laravel.com/docs/starter-kits#react",
-    icon: BookOpen,
-  },
-];
+// const rightNavItems: NavItem[] = [
+//   {
+//     title: "Repository",
+//     href: "https://github.com/laravel/react-starter-kit",
+//     icon: Folder,
+//   },
+//   {
+//     title: "Documentation",
+//     href: "https://laravel.com/docs/starter-kits#react",
+//     icon: BookOpen,
+//   },
+// ];
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -130,7 +116,7 @@ export function AppHeader() {
                       ))}
                     </div>
 
-                    <div className="flex flex-col space-y-4">
+                    {/* <div className="flex flex-col space-y-4">
                       {rightNavItems.map((item) => (
                         <a
                           key={item.title}
@@ -143,7 +129,7 @@ export function AppHeader() {
                           <span>{item.title}</span>
                         </a>
                       ))}
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </SheetContent>
@@ -181,7 +167,7 @@ export function AppHeader() {
                       {item.icon && <item.icon className="mr-2 size-4" />}
                       {item.title}
                     </Link>
-                    {pathname === item.href && (
+                    {pathname.startsWith(item.href) && (
                       <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
                     )}
                   </NavigationMenuItem>
@@ -191,7 +177,7 @@ export function AppHeader() {
           </div>
 
           <div className="ml-auto flex items-center space-x-2">
-            <div className="relative flex items-center space-x-1">
+            {/* <div className="relative flex items-center space-x-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -223,7 +209,7 @@ export function AppHeader() {
                   </TooltipProvider>
                 ))}
               </div>
-            </div>
+            </div> */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="size-10 rounded-full p-1">

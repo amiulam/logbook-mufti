@@ -8,24 +8,22 @@ export default async function Home() {
 
   return (
     <div>
-      <div className="container mx-auto px-4 py-8 md:max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
-          <>
-            <h1 className="text-3xl font-bold text-gray-900">Event Logbook</h1>
-            <p className="mt-2 text-gray-600">Kelola acara dan kondisi alat</p>
-          </>
-          <CreateEventModal />
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {events.length < 1 ? (
-            <div>No data yet</div>
-          ) : (
-            events.map((event) => <EventCard key={event.id} event={event} />)
-          )}
-        </div>
-        <EndEventDialog />
+      <div className="mb-8 flex items-center justify-between">
+        <>
+          <h1 className="text-3xl font-bold text-gray-900">Event Logbook</h1>
+          <p className="mt-2 text-gray-600">Kelola acara dan kondisi alat</p>
+        </>
+        <CreateEventModal />
       </div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {events.length < 1 ? (
+          <div>No data yet</div>
+        ) : (
+          events.map((event) => <EventCard key={event.id} event={event} />)
+        )}
+      </div>
+      <EndEventDialog />
     </div>
   );
 }

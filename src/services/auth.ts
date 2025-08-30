@@ -2,7 +2,6 @@
 
 import { auth } from "@/lib/auth";
 import { signInSchema, signUpSchema } from "@/schemas";
-import { redirect } from "next/navigation";
 import { APIError } from "better-auth/api";
 
 export const signInWithEmail = async (data: unknown) => {
@@ -20,7 +19,7 @@ export const signInWithEmail = async (data: unknown) => {
       body: { email, password },
     });
 
-    redirect("/app/events");
+    return { success: true, message: "signin succeed" };
   } catch (error) {
     if (error instanceof APIError) {
       return {
@@ -46,7 +45,7 @@ export const signUpWithEmail = async (data: unknown) => {
       body: { name, email, password },
     });
 
-    redirect("/signin");
+    return { success: true, message: "signup succeed" };
   } catch (error) {
     if (error instanceof APIError) {
       return {

@@ -17,9 +17,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpSchema } from "@/schemas";
 import type z from "zod";
 import { signUpWithEmail } from "@/services/auth";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function SignUpForm() {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -27,14 +28,15 @@ export default function SignUpForm() {
   });
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
+    setError(null);
     const res = await signUpWithEmail(values);
 
-    if (res && !res.success) {
+    if (res && !res?.success) {
       setError(res.message);
       return;
-    } else {
-      redirect("/app/events");
     }
+
+    router.replace("/signin");
   };
 
   return (

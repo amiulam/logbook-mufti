@@ -25,7 +25,7 @@ export default async function AppLayout({
   return (
     <div>
       <AppHeader />
-      {children}
+      <div className="container mx-auto px-4 py-8 md:max-w-7xl">{children}</div>
     </div>
   );
 }

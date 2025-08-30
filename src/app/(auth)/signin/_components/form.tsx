@@ -16,11 +16,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInSchema } from "@/schemas";
 import type z from "zod";
-import { signInWithEmail } from "@/services/auth";
-import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignInForm() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
@@ -29,14 +27,17 @@ export default function SignInForm() {
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     setError(null);
-    const res = await signInWithEmail(values);
 
-    if (res && !res?.success) {
-      setError(res.message);
+    const res = await authClient.signIn.email({
+      email: values.email,
+      password: values.password,
+      callbackURL: "/app/events",
+    });
+
+    if (res.error) {
+      setError(res.error.message!);
       return;
     }
-
-    router.replace("/app/events");
   };
 
   return (

@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpSchema } from "@/schemas";
 import type z from "zod";
-import { signUpWithEmail } from "@/services/auth";
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
 export default function SignUpForm() {
@@ -29,13 +29,19 @@ export default function SignUpForm() {
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
     setError(null);
-    const res = await signUpWithEmail(values);
 
-    if (res && !res?.success) {
-      setError(res.message);
+    const res = await authClient.signUp.email({
+      name: values.name,
+      email: values.email,
+      password: values.password,
+    });
+
+    if (res.error) {
+      setError(res.error.message!);
       return;
     }
 
+    // Manual redirect to signin page after successful signup
     router.replace("/signin");
   };
 

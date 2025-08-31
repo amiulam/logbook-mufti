@@ -7,13 +7,13 @@ export default function SignInPage() {
     <Card className="overflow-hidden p-0">
       <CardContent className="grid p-0 md:grid-cols-2">
         <SignInForm />
-        <div className="bg-muted relative hidden md:block">
+        <div className="bg-muted relative hidden border-l md:block">
           <Image
-            src="/placeholder.svg"
+            src="/images/app-illustration.jpg"
             width={1000}
             height={1000}
             alt="Image"
-            className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+            className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.8]"
           />
         </div>
       </CardContent>

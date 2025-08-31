@@ -14,6 +14,7 @@ import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { generateReport, ReportData } from "@/services/reports";
 import ReportDisplay from "./report-display";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function ReportGenerator() {
   const [date, setDate] = useState<DateRange | undefined>();
@@ -54,70 +55,80 @@ export default function ReportGenerator() {
       const { exportReportToPdf } = await import("@/lib/pdf-generator");
       exportReportToPdf(reportData);
     } catch (error) {
-        console.error("Error exporting to PDF", error);
-        setError("Failed to export report as PDF.");
-    }
-    finally {
-        setIsExporting(false);
+      console.error("Error exporting to PDF", error);
+      setError("Failed to export report as PDF.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
   return (
-    <div className="border rounded-lg p-6">
-      <div className="flex flex-col sm:flex-row items-center gap-4">
-        <Popover>
-          <PopoverTrigger asChild>
+    <>
+      <Card>
+        <CardContent>
+          <div className="flex flex-col items-center gap-4 sm:flex-row">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant={"outline"}
+                  className={cn(
+                    "w-[300px] justify-start text-left font-normal",
+                    !date && "text-muted-foreground",
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date?.from ? (
+                    date.to ? (
+                      <>
+                        {format(date.from, "LLL dd, y")} -{" "}
+                        {format(date.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(date.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  defaultMonth={date?.from}
+                  selected={date}
+                  onSelect={setDate}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
             <Button
-              id="date"
-              variant={"outline"}
-              className={cn(
-                "w-[300px] justify-start text-left font-normal",
-                !date && "text-muted-foreground",
-              )}
+              onClick={handleGenerateReport}
+              disabled={isLoading || !date?.from || !date?.to}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date?.from ? (
-                date.to ? (
-                  <>
-                    {format(date.from, "LLL dd, y")} -{" "}
-                    {format(date.to, "LLL dd, y")}
-                  </>
-                ) : (
-                  format(date.from, "LLL dd, y")
-                )
-              ) : (
-                <span>Pick a date</span>
-              )}
+              {isLoading ? "Memproses..." : "Tampilkan Laporan"}
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="range"
-              defaultMonth={date?.from}
-              selected={date}
-              onSelect={setDate}
-              numberOfMonths={2}
-            />
-          </PopoverContent>
-        </Popover>
-        <Button onClick={handleGenerateReport} disabled={isLoading || !date?.from || !date?.to}>
-          {isLoading ? "Memproses..." : "Tampilkan Laporan"}
-        </Button>
-        {reportData && (
-          <Button onClick={handleExportPDF} disabled={isExporting} variant="outline">
-            <Download className="size-4" />
-            {isExporting ? "Exporting..." : "Export PDF"}
-          </Button>
-        )}
-      </div>
+            {reportData && (
+              <Button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                variant="outline"
+              >
+                <Download className="size-4" />
+                {isExporting ? "Exporting..." : "Export PDF"}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {error && <p className="text-destructive mt-4">{error}</p>}
-      
+
       {reportData && (
         <div className="mt-8">
-            <ReportDisplay data={reportData} />
+          <ReportDisplay data={reportData} />
         </div>
       )}
-    </div>
+    </>
   );
 }

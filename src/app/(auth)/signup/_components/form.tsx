@@ -48,9 +48,9 @@ export default function SignUpForm() {
   return (
     <Form {...form}>
       <form className="p-6 md:p-8" onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <div className="flex flex-col items-center text-center">
-            <h1 className="text-2xl font-bold">Selamat datang!</h1>
+            <h1 className="text-lg font-bold lg:text-2xl">Selamat datang!</h1>
             <p className="text-muted-foreground text-balance">
               Buat akun untuk memulai
             </p>

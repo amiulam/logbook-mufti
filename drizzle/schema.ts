@@ -295,7 +295,9 @@ export const endEventSchema = z
           path: ["toolConditions", index, "finalCondition"],
         });
       }
-      if (!cond.finalImages || cond.finalImages.length < 1) {
+      // Only require final images when the tool is not marked as missing
+      const isMissing = cond.finalCondition === "missing";
+      if (!isMissing && (!cond.finalImages || cond.finalImages.length < 1)) {
         ctx.addIssue({
           code: "custom",
           message: "Minimal 1 foto kondisi akhir harus diupload",

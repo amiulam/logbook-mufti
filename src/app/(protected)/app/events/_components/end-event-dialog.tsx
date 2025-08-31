@@ -51,14 +51,14 @@ type EndEventFormValues = z.input<typeof endEventSchema>;
 export default function EndEventModal() {
   const [loading, setLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Record<number, File[]>>(
-    {}
+    {},
   );
   const [isUploading, setIsUploading] = useState(false);
   const [tools, setTools] = useState<ToolWithImages[]>([]);
 
   const endEventModal = useEventStore((state) => state.endModalDialogOpen);
   const setEndEventModal = useEventStore(
-    (state) => state.setEndModalDialogOpen
+    (state) => state.setEndModalDialogOpen,
   );
 
   const form = useForm<EndEventFormValues>({
@@ -115,7 +115,7 @@ export default function EndEventModal() {
     const updatedConditions = currentConditions.map((condition) =>
       condition.toolId === toolId
         ? { ...condition, finalImages: images }
-        : condition
+        : condition,
     );
     form.setValue("toolConditions", updatedConditions, {
       shouldValidate: true,
@@ -125,7 +125,7 @@ export default function EndEventModal() {
   const handleSameAsInitialChange = (
     toolId: number,
     checked: boolean,
-    initialCondition: string
+    initialCondition: string,
   ) => {
     const currentConditions = form.getValues("toolConditions");
     const toolIndex = tools.findIndex((t) => t.id === toolId);
@@ -141,7 +141,7 @@ export default function EndEventModal() {
             notes: checked ? "" : condition.notes,
             finalImages: checked ? [] : condition.finalImages,
           }
-        : condition
+        : condition,
     );
 
     // Update form values without immediate validation
@@ -203,7 +203,7 @@ export default function EndEventModal() {
           const uploadedImages = await uploadToolImages(
             images,
             condition.toolId,
-            "final"
+            "final",
           );
           await saveToolImages(condition.toolId, uploadedImages);
         }
@@ -232,7 +232,7 @@ export default function EndEventModal() {
       <DialogDescription className="sr-only">
         Dialog untuk menyelesaikan kegiatan
       </DialogDescription>
-      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>
             Periksa Kondisi Alat Sebelum Mengakhiri Kegiatan
@@ -240,7 +240,7 @@ export default function EndEventModal() {
         </DialogHeader>
 
         {tools.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
+          <div className="text-muted-foreground py-8 text-center">
             Tidak ada alat yang ditugaskan untuk kegiatan ini.
           </div>
         ) : (
@@ -250,10 +250,10 @@ export default function EndEventModal() {
               className="space-y-4"
             >
               {tools.map((tool, index) => (
-                <Card key={tool.id} className="p-4 gap-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-lg">{tool.name}</h3>
-                    <div className="text-right text-sm text-muted-foreground">
+                <Card key={tool.id} className="gap-4 p-4">
+                  <div className="flex items-start justify-between">
+                    <h3 className="text-lg font-semibold">{tool.name}</h3>
+                    <div className="text-muted-foreground text-right text-sm">
                       <div>Kategori: {tool.category}</div>
                       <div>Total: {tool.total}</div>
                     </div>
@@ -281,7 +281,7 @@ export default function EndEventModal() {
                               handleSameAsInitialChange(
                                 tool.id,
                                 e.target.checked,
-                                tool.initialCondition
+                                tool.initialCondition,
                               );
                             }}
                           />
@@ -356,39 +356,41 @@ export default function EndEventModal() {
                   )}
 
                   {/* Final Images Upload */}
-                  {!form.watch(`toolConditions.${index}.sameAsInitial`) && (
-                    <FormField
-                      control={form.control}
-                      name={`toolConditions.${index}.finalImages`}
-                      render={() => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            Foto Kondisi Akhir
-                          </FormLabel>
-                          <FormControl>
-                            <ImageUpload
-                              onImagesChange={(images) =>
-                                handleImagesChange(tool.id, images)
-                              }
-                              maxImages={5}
-                              required={form.formState.submitCount > 0}
-                              error={
-                                form.formState.submitCount > 0
-                                  ? (form.formState.errors.toolConditions?.[
-                                      index
-                                    ]?.finalImages
-                                      ?.message as unknown as string)
-                                  : undefined
-                              }
-                            />
-                          </FormControl>
-                          {form.formState.submitCount > 0 &&
-                            !!form.formState.errors.toolConditions?.[index]
-                              ?.finalImages && <FormMessage />}
-                        </FormItem>
-                      )}
-                    />
-                  )}
+                  {!form.watch(`toolConditions.${index}.sameAsInitial`) &&
+                    form.watch(`toolConditions.${index}.finalCondition`) !==
+                      "missing" && (
+                      <FormField
+                        control={form.control}
+                        name={`toolConditions.${index}.finalImages`}
+                        render={() => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Foto Kondisi Akhir
+                            </FormLabel>
+                            <FormControl>
+                              <ImageUpload
+                                onImagesChange={(images) =>
+                                  handleImagesChange(tool.id, images)
+                                }
+                                maxImages={5}
+                                required={form.formState.submitCount > 0}
+                                error={
+                                  form.formState.submitCount > 0
+                                    ? (form.formState.errors.toolConditions?.[
+                                        index
+                                      ]?.finalImages
+                                        ?.message as unknown as string)
+                                    : undefined
+                                }
+                              />
+                            </FormControl>
+                            {form.formState.submitCount > 0 &&
+                              !!form.formState.errors.toolConditions?.[index]
+                                ?.finalImages && <FormMessage />}
+                          </FormItem>
+                        )}
+                      />
+                    )}
                 </Card>
               ))}
 
@@ -408,7 +410,7 @@ export default function EndEventModal() {
                 >
                   {loading || isUploading ? (
                     <>
-                      <Loader2 className="size-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                       {isUploading ? "Uploading..." : "Ending Event..."}
                     </>
                   ) : (

@@ -28,21 +28,22 @@ import { NavItem } from "@/types";
 import {
   CalendarIcon,
   FilesIcon,
-  LayoutGridIcon,
+  // LayoutGridIcon,
   Menu,
   Moon,
   Sun,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const mainNavItems: NavItem[] = [
-  {
-    title: "Dashboard",
-    href: "/app/dashboard",
-    icon: LayoutGridIcon,
-  },
+  // {
+  //   title: "Dashboard",
+  //   href: "/app/dashboard",
+  //   icon: LayoutGridIcon,
+  // },
   {
     title: "Kegiatan",
     href: "/app/events",
@@ -99,17 +100,20 @@ export function AppHeader() {
               >
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SheetHeader className="flex justify-start text-left">
-                  <svg
-                    className="size-5 fill-current text-black dark:text-black"
-                    viewBox="0 0 40 42"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M17.2 5.63325L8.6 0.855469L0 5.63325V32.1434L16.2 41.1434L32.4 32.1434V23.699L40 19.4767V9.85547L31.4 5.07769L22.8 9.85547V18.2999L17.2 21.411V5.63325ZM38 18.2999L32.4 21.411V15.2545L38 12.1434V18.2999ZM36.9409 10.4439L31.4 13.5221L25.8591 10.4439L31.4 7.36561L36.9409 10.4439ZM24.8 18.2999V12.1434L30.4 15.2545V21.411L24.8 18.2999ZM23.8 20.0323L29.3409 23.1105L16.2 30.411L10.6591 27.3328L23.8 20.0323ZM7.6 27.9212L15.2 32.1434V38.2999L2 30.9666V7.92116L7.6 11.0323V27.9212ZM8.6 9.29991L3.05913 6.22165L8.6 3.14339L14.1409 6.22165L8.6 9.29991ZM30.4 24.8101L17.2 32.1434V38.2999L30.4 30.9666V24.8101ZM9.6 11.0323L15.2 7.92117V22.5221L9.6 25.6333V11.0323Z"
-                    />
-                  </svg>
+                  <Image
+                    src="/images/logo-biru.png"
+                    height={70}
+                    width={70}
+                    alt="RRI Logo (biru)"
+                    className="block dark:hidden"
+                  />
+                  <Image
+                    src="/images/logo-putih.png"
+                    height={70}
+                    width={70}
+                    alt="RRI Logo (putih)"
+                    className="hidden dark:block"
+                  />
                 </SheetHeader>
                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                   <div className="flex h-full flex-col justify-between text-sm">
@@ -146,16 +150,29 @@ export function AppHeader() {
             </Sheet>
           </div>
 
-          {/* <Link
+          <Link
             href="/app/dashboard"
             prefetch
             className="flex items-center space-x-2"
           >
-            <AppLogo />
-          </Link> */}
+            <Image
+              src="/images/logo-biru.png"
+              height={85}
+              width={85}
+              alt="RRI Logo (biru)"
+              className="block dark:hidden"
+            />
+            <Image
+              src="/images/logo-putih.png"
+              height={85}
+              width={85}
+              alt="RRI Logo (putih)"
+              className="hidden dark:block"
+            />
+          </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden h-full items-center space-x-6 lg:flex">
+          <div className="ml-6 hidden h-full items-center space-x-6 lg:flex">
             <NavigationMenu className="flex h-full items-stretch">
               <NavigationMenuList className="flex h-full items-stretch space-x-2">
                 {mainNavItems.map((item, index) => (

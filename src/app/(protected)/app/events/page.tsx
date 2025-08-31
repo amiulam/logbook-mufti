@@ -9,7 +9,7 @@ export default async function Home() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-white">
           Logbook Kegiatan
         </h1>
         <CreateEventModal />

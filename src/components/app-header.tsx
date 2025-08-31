@@ -153,7 +153,7 @@ export function AppHeader() {
           <Link
             href="/app/events"
             prefetch
-            className="hidden items-center space-x-2 lg:flex"
+            className="flex items-center space-x-2"
           >
             <Image
               src="/images/logo-biru.png"

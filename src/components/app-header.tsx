@@ -151,9 +151,9 @@ export function AppHeader() {
           </div>
 
           <Link
-            href="/app/dashboard"
+            href="/app/events"
             prefetch
-            className="flex items-center space-x-2"
+            className="hidden items-center space-x-2 lg:flex"
           >
             <Image
               src="/images/logo-biru.png"
